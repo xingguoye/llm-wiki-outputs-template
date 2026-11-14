@@ -48,20 +48,20 @@ Four laws, in priority order:
 1. Read `outputs/<channel>/SPEC.md` and the wiki pages in its fact map.
 2. Draft into `outputs/<channel>/drafts/<YYYY-MM>/`, one file per language.
 3. Measure limits with a script (`len()`), not by eye. Fix the draft if over — never the wiki, unless a fact is wrong.
-4. Quote the fact's claim ID (`<!-- claim:person-1 -->`) next to each sentence you render from a page. Lint fails if you invent one.
+4. Quote the fact's claim ID (`<!-- claim:person-1 -->`) next to each sentence you render from a page. Rules: `wiki/SCHEMA.md` § Claim IDs.
 5. Walk the spec's acceptance checklist and forbidden list.
-6. Update `outputs/<channel>/state.md`: version, date, measured values, deviations. The four contract sections must stay (`Current`, `Known deviations`, `Versions`, `Next action`).
+6. Update `outputs/<channel>/state.md`: version, date, measured values, deviations — in the four sections `outputs/SPEC.md` defines.
 7. Append an `output` entry to `wiki/log.md` linking the state entry.
 
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # links, orphans, frontmatter, layer leaks, claim IDs, state shape, PII
+python scripts/wiki_lint.py wiki/          # what it checks, error by error: wiki/SCHEMA.md § Lint cadence
 python scripts/wiki_lint.py wiki/ --strict # warnings fail too (use in CI)
-python scripts/wiki_lint.py --self-test    # prove the checker still catches its nine fixtures
+python scripts/wiki_lint.py --self-test    # prove the checker still catches its fixtures
 ```
 
-Before reporting done, everything the lint prints as an error is yours to fix. Warnings are judgement calls: a page linked only from `index.md` needs a home in the prose, a "restates" warning means a fact escaped the page that owns it.
+Before reporting done, every lint error is yours to fix. Warnings are judgement calls — § Lint cadence says what each one means and which way to resolve it.
 
 That script is the whole toolchain in this repo — stdlib only. `build_index.py` regenerates `wiki/index.md`; `check_translations.py` keeps any translations declared in `.translations` present and current — with an empty list it passes and there is nothing to do. Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
 

@@ -78,11 +78,11 @@ Want to see the conventions in use before writing anything? Read [`docs/career/`
 ## Commands
 
 ```bash
-python scripts/wiki_lint.py wiki/            # links, orphans, frontmatter, layer leaks, claim IDs, state shape, PII
+python scripts/wiki_lint.py wiki/            # checks: wiki/SCHEMA.md § Lint cadence
 python scripts/wiki_lint.py wiki/ --json     # same, machine-readable (CI uses this)
 python scripts/wiki_lint.py wiki/ --strict   # warnings fail too; use in CI
 python scripts/wiki_lint.py wiki/ --no-pii   # skip the PII scan (names, not patterns, are the rest)
-python scripts/wiki_lint.py --self-test      # check the checker against nine known-bad fixtures
+python scripts/wiki_lint.py --self-test      # check the checker against its known-bad fixtures
 python scripts/build_index.py wiki/          # rewrite wiki/index.md from the pages (--check to verify)
 python scripts/check_translations.py         # coverage/freshness of the translations you declared
 git ls-files raw/                            # must be empty except raw/README.md
@@ -90,7 +90,7 @@ git ls-files raw/                            # must be empty except raw/README.m
 
 No dependencies, no install. Python 3.9+. It exits 1 on errors, so it drops straight into CI — see [.github/workflows/lint.yml](.github/workflows/lint.yml), which also enforces the raw/ privacy rule and law 3.
 
-Beyond structure, the checks that still need a human are the ones about meaning: two pages asserting the same date differently, a claim whose source vanished, a fact that changed while a draft kept the old value. The script now catches the mechanical half — duplicated claim IDs, a draft citing a claim no page defines, a `state.md` that dropped a contract section, PII patterns — and stops there. Meaning is the job the LLM does.
+Beyond structure, the checks that still need a human are the ones about meaning: two pages asserting the same date differently, a claim whose source vanished, a fact that changed while a draft kept the old value. The script covers the mechanical half — the exact list is in `wiki/SCHEMA.md` § Lint cadence — and stops there. Meaning is the job the LLM does.
 
 Optional, if you want semantic search or the graph layer: they live in the `llm-wiki` agent skill this template borrows its conventions from (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`). Install it, point the scripts at your `wiki/`. The template works without them — markdown is canonical.
 

@@ -54,7 +54,7 @@ updated: 2026-01-31
 
 Source pages additionally carry `raw:` (the file path), `ingested:`, and optionally `authors:` / `url:`.
 
-Rules that keep lint green:
+Frontmatter rules:
 
 - `title`, `created`, `type`, `tags`, `updated` on every page. No exceptions.
 - `sources:` refers to slugs of `wiki/sources/` pages only.
@@ -82,6 +82,7 @@ Nine years six months of paid work as of 2026-11.
 - Defined on the page that **owns** the fact, once. A duplicate ID is an error: two pages claiming the same ID is the bug claim IDs exist to prevent.
 - Quoted from a draft as `<!-- claim:person-1 -->` next to the sentence it renders. If the draft names an ID no page defines, lint fails — drafting cannot invent facts.
 - Deleting a claim: delete the ID with it and fix the drafts that quoted it. Never re-number.
+- The checker enforces these four rules; the fail conditions are listed once, under [Lint cadence](#lint-cadence).
 
 ## Sizing
 
@@ -139,8 +140,12 @@ A channel spec must not contain facts. It points at wiki slugs and states constr
 
 ## Lint cadence
 
-- Structural lint after every ingest: `python scripts/wiki_lint.py wiki/` (add `--strict` in CI). It fails on: dead or malformed links; missing frontmatter; `sources:` slugs with no page under `wiki/sources/`; frontmatter keys repeated in the body; duplicate claim IDs; a draft quoting an undefined claim; an `outputs/*/state.md` missing one of the four contract sections; PII patterns (email, phone, absolute home path) in pages or drafts. Warnings cover: stale `updated`, orphan pages (linked from no page — index-only counts as a warning), and a fact restated on a page that does not own it.
-- `python scripts/build_index.py wiki/ --check` when `index.md` is generated rather than hand-written; `--self-test` proves the checker still catches all of the above.
+This section is the single source of truth for what the checker enforces. `AGENTS.md`, `README.md` and `METHOD.md` point here instead of restating it; if a check changes, this list is the only place that needs the new wording.
+
+- Structural lint after every ingest: `python scripts/wiki_lint.py wiki/` (add `--strict` in CI).
+  - **Errors**: dead or malformed links; missing frontmatter; a `sources:` entry with no page under `wiki/sources/`; frontmatter keys repeated in the body; a duplicate claim ID, or one not ending in `-<number>`; a draft quoting a claim ID no page defines; an `outputs/*/state.md` missing one of the four sections `outputs/SPEC.md` requires (`Current`, `Known deviations`, `Versions`, `Next action`); PII patterns (email, phone, absolute home or Windows path) in pages or drafts.
+  - **Warnings**: `updated` older than the last body edit; a page reachable only through `index.md`; a phrase registered under another page's `owns:`, i.e. the fact escaped its owner; a claim ID mentioned but never defined.
+- `python scripts/build_index.py wiki/ --check` when `index.md` is generated rather than hand-written; `--self-test` proves the checker still catches its known-bad fixtures.
 - Read-through for contradictions after every 5 ingests.
 - Optional, if the `llm-wiki` skill is installed: `wiki_stats.py` monthly for drift, `wiki_graph_lint.py` before any graph rebuild.
 
