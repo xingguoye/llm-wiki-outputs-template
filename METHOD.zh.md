@@ -1,3 +1,5 @@
+<!-- translation: zh · canonical: METHOD.md · synced: 2026-11-14 -->
+
 # 方法论：事实、去处，以及两者之间的边界
 
 这是本模板背后的推理。动一个既有 wiki 之前先读一遍；日常操作规则在 [`wiki/SCHEMA.md`](wiki/SCHEMA.md) 与 [`outputs/SPEC.md`](outputs/SPEC.md)。
@@ -113,6 +115,7 @@ raw/  ──ingest──▶  wiki/  ──render──▶  outputs/  ──发�
 ## 10. 已知局限
 
 - **PII。** `raw/` 必须 gitignore；wiki 不得存电话、住址、证件号、生日。这是约定加一次复查，没有脚本强制。
-- **多语言重复。** 多语档案在 `outputs/` 里重复文案，不在 `wiki/`。让事实保持语言中立（日期、年限、专名），只有措辞会翻倍。
-- **CI 只守三件事。** [`.github/workflows/lint.yml`](.github/workflows/lint.yml) 在三种情况下 fail：结构 lint 有 error、`sources:` 引用 `outputs/`（铁律 3）、`raw/` 里有被跟踪的文件。其余——矛盾、漂移、事实悄悄改了——仍靠通读。
+- **多语言重复。** 多语档案在 `outputs/` 里重复文案，不在 `wiki/`。让事实保持语言中立（日期、年限、专名），只有措辞会翻倍。本仓库对自己的文档用同一条规则：每份文档一份正本，外加 `.zh.md`/`.es.md` 译本，译本声明自己译自哪份、何时译的。账本、生成的目录与片段免译：译它们必然漂移，免译清单在 `scripts/check_translations.py` 里。
+- **译本会漂。** 每份译本首行写着 `<!-- translation: es · canonical: <路径> · synced: <日期> -->`；`scripts/check_translations.py` 在译本缺失或标错时报错，并在日期早于正本修改时间时给出警告。它无法判断*内容*是否还对——只知道从那以后没人重读过。每次改完正本都要重同步，否则西语版会悄悄成为仓库里最旧的假话。
+- **CI 只守四件事。** [`.github/workflows/lint.yml`](.github/workflows/lint.yml) 在四种情况下 fail：结构 lint 有 error、`sources:` 引用 `outputs/`（铁律 3）、`raw/` 里有被跟踪的文件、译本缺失或过期。其余——矛盾、漂移、事实悄悄改了——仍靠通读。
 - **lint 查结构，不查真相。** 它找死链和孤儿；矛盾检测仍归你。

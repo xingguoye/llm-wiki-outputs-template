@@ -109,7 +109,7 @@ def parse_frontmatter(page: Page) -> None:
                 page.meta[current] = [item]
 
 
-NON_PAGES = {"index.md", "log.md", "SCHEMA.md", "README.md"}
+TRANSLATION_SUFFIX = re.compile(r"\.(zh|es)\.md$", re.I)
 
 
 def collect(root: Path) -> list[Page]:
@@ -118,6 +118,8 @@ def collect(root: Path) -> list[Page]:
         rel_parts = path.relative_to(root).parts
         if any(part.startswith(".") for part in rel_parts):
             continue
+        if TRANSLATION_SUFFIX.search(path.name):
+            continue  # translated sidecars mirror a canonical page; the canonical one is checked
         if path.name in ("README.md", "SCHEMA.md") or (len(rel_parts) == 1 and path.name in ("index.md", "log.md")):
             continue  # index/log/SCHEMA/README are the wiki's own apparatus, not pages
         rel = str(path.relative_to(root)).replace("\\", "/")

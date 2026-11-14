@@ -1,3 +1,5 @@
+<!-- translation: es · canonical: README.md · synced: 2026-11-14 -->
+
 # LLM Wiki + Outputs
 
 Una plantilla para una base de conocimiento personal que alimenta **varios destinos** — un CV, un perfil de LinkedIn, una página de portafolio, respuestas de entrevista — desde **un solo** cuerpo de hechos.
@@ -50,12 +52,14 @@ outputs/              capa de destino. Especificaciones, estado, borradores.
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
 docs/                 ejemplo resuelto (ficticio) — se lee in situ, fuera del lint
-scripts/              wiki_lint.py — solo biblioteca estándar, sin instalación
+scripts/              wiki_lint.py + check_translations.py — solo biblioteca estándar, sin instalación
 ```
 
 ¿Quieres ver las convenciones en uso antes de escribir nada? Lee [`docs/career/`](docs/career/README.md) in situ: cinco páginas ficticias, en orden de lectura. Están deliberadamente fuera de `wiki/` para que no afecten al lint ni a la búsqueda.
 
-La documentación viene en tres idiomas: este README y el [método](METHOD.es.md) existen como `.md` (inglés), `.zh.md` (chino) y `.es.md` (español). Los contratos que lee el agente —`AGENTS.md`, `wiki/SCHEMA.md`, `outputs/SPEC.md`— se quedan a propósito en un solo idioma: tres copias de una interfaz divergen, y el agente solo lee una.
+La documentación viene en tres idiomas allí donde una persona realmente lo necesita: `README.md`, `METHOD.md`, `AGENTS.md`, `CREDITS.md`, `wiki/SCHEMA.md`, `wiki/graph/README.md`, cada `SPEC.md` y todo el ejemplo de `docs/career/` tienen junto a ellos sus versiones `.zh.md` (chino) y `.es.md` (español), y el archivo sin sufijo es el canónico. Cada traducción abre con una línea de procedencia —`<!-- translation: es · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->`— y `python scripts/check_translations.py` falla cuando falta una traducción, está mal etiquetada o es más antigua que el archivo que traduce.
+
+Ocho archivos se quedan en un solo idioma a propósito, y la lista de exenciones la lleva el script: `wiki/index.md` (un índice que se reescribe en cada ingesta), `wiki/log.md` (historial de solo adición; cada entrada conserva su idioma), los registros `state.md` (cambian en cada publicación), `wiki/.page-template.md` (un fragmento), `CLAUDE.md` (un puntero de tres líneas) y `raw/README.md` (se lee una vez, antes de que exista nada). Traducir un registro no aporta nada y garantiza la deriva. Las traducciones son para las personas; si una discrepa de su canónico, gana el canónico.
 
 ## Qué va dónde
 
@@ -72,6 +76,7 @@ La documentación viene en tres idiomas: este README y el [método](METHOD.es.md
 python scripts/wiki_lint.py wiki/            # enlaces rotos, huérfanas, frontmatter, fugas de capa
 python scripts/wiki_lint.py wiki/ --json     # igual, legible por máquina (lo usa el CI)
 python scripts/wiki_lint.py wiki/ --strict   # los avisos también fallan; úsalo en CI
+python scripts/check_translations.py         # traducciones completas y al día
 git ls-files raw/                            # debe estar vacío salvo raw/README.md
 ```
 

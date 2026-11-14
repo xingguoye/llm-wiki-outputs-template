@@ -50,12 +50,16 @@ outputs/              destination layer. Specs, state, drafts.
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
 docs/                 worked example (fictional) — read in place, outside lint's path
-scripts/              wiki_lint.py — stdlib only, no install step
+scripts/              wiki_lint.py + check_translations.py — stdlib only, no install step
 ```
+
+Every doc a person reads to learn or write the method has a `.zh.md` and `.es.md` twin; the file without a suffix is canonical. Ledgers, the generated index and the page template stay English.
 
 Want to see the conventions in use before writing anything? Read [`docs/career/`](docs/career/README.md) in place — five fictional pages, in reading order. They are deliberately outside `wiki/` so they don't affect lint or search.
 
-Docs ship in three languages: this README and [METHOD](METHOD.md) exist as `.md` (English), `.zh.md` (Chinese) and `.es.md` (Spanish). The agent-facing contracts — `AGENTS.md`, `wiki/SCHEMA.md`, `outputs/SPEC.md` — stay in one language on purpose: three copies of an interface drift, and the agent reads only one of them.
+Docs ship in three languages wherever a human actually needs them: `README.md`, `METHOD.md`, `AGENTS.md`, `CREDITS.md`, `wiki/SCHEMA.md`, `wiki/graph/README.md`, every `SPEC.md`, and the whole `docs/career/` example have `.zh.md` (Chinese) and `.es.md` (Spanish) sidecars, and the un-suffixed file is canonical. Each translation opens with a provenance line — `<!-- translation: es · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->` — and `python scripts/check_translations.py` fails when a sidecar is missing, mislabelled, or older than the file it translates.
+
+Eight files stay single-language on purpose, and the script carries that exemption list: `wiki/index.md` (a table of contents rewritten on every ingest), `wiki/log.md` (append-only history, entries keep their own language), the `state.md` ledgers (they change on every release), `wiki/.page-template.md` (a fragment), `CLAUDE.md` (a three-line pointer) and `raw/README.md` (read once, before anything exists). Translating a ledger buys nothing and guarantees drift. Translations are for humans; if one disagrees with its canonical, the canonical wins.
 
 ## What goes where
 

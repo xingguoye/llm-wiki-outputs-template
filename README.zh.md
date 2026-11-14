@@ -1,3 +1,5 @@
+<!-- translation: zh · canonical: README.md · synced: 2026-11-14 -->
+
 # LLM Wiki + Outputs（中文）
 
 一份把**同一批事实**同时输送到多个去处（简历、LinkedIn、作品集、面试口径）的知识库模板。
@@ -50,12 +52,14 @@ outputs/              产出层：规格 + 现状 + 草稿
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
 docs/                 脱敏示例（虚构人物）——就地读，不在 lint 扫描路径上
-scripts/              wiki_lint.py——只用标准库，无需安装
+scripts/              wiki_lint.py + check_translations.py——只用标准库，无需安装
 ```
 
 想在动笔前先看约定怎么落地？就地读 [`docs/career/`](docs/career/README.md)——五个虚构页面，按顺序看。它们刻意放在 `wiki/` 之外，不影响 lint 与检索。
 
-文档三语并行：README 与 [METHOD](METHOD.zh.md) 各有 `.md`（英）/`.zh.md`（中）/`.es.md`（西）。面向 agent 的契约——`AGENTS.md`、`wiki/SCHEMA.md`、`outputs/SPEC.md`——故意只保留单语：接口文档一译三份必然漂移，而 agent 只会读其中一份。
+三语覆盖到"人真的需要读"的地方：`README.md`、`METHOD.md`、`AGENTS.md`、`CREDITS.md`、`wiki/SCHEMA.md`、`wiki/graph/README.md`、每一份 `SPEC.md`，以及整个 `docs/career/` 示例，都有 `.zh.md`（中）与 `.es.md`（西）译本，无后缀的那份是正本。每份译本首行写来源——`<!-- translation: es · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->`——`python scripts/check_translations.py` 会在译本缺失、标错或落后于正本时报错。
+
+有 8 个文件刻意保持单语，免译清单就写在那支脚本里：`wiki/index.md`（每次摄入都重写的目录）、`wiki/log.md`（只追加的历史，条目保留各自原语言）、`state.md` 账本（每次发布都变）、`wiki/.page-template.md`（片段）、`CLAUDE.md`（三行指针）、`raw/README.md`（在任何东西存在之前读一次）。译一本流水账不带来任何好处，却必然漂移。译本供人读；若与正本冲突，以正本为准。
 
 ## 什么该放哪一层
 
@@ -72,6 +76,7 @@ scripts/              wiki_lint.py——只用标准库，无需安装
 python scripts/wiki_lint.py wiki/            # 死链、孤儿、frontmatter、渠道教条泄漏
 python scripts/wiki_lint.py wiki/ --json     # 同上，机器可读（CI 用这个）
 python scripts/wiki_lint.py wiki/ --strict   # 警告也算失败，CI 可用
+python scripts/check_translations.py         # 三语译本是否齐全、是否落后于正本
 git ls-files raw/                            # 除 raw/README.md 外必须为空
 ```
 

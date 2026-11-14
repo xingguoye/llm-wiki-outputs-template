@@ -39,6 +39,9 @@ jobs:
           fi
           echo "ok: raw/ is untracked"
 
+      - name: Translations complete and current
+        run: python scripts/check_translations.py .
+
       - name: Channel specs must declare fact mappings
         run: |
           set -e

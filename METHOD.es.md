@@ -1,3 +1,5 @@
+<!-- translation: es · canonical: METHOD.md · synced: 2026-11-14 -->
+
 # Método: hechos, destinos y el límite entre ellos
 
 Este es el razonamiento detrás de la plantilla. Léelo una vez antes de reestructurar un wiki existente; las reglas operativas viven en [`wiki/SCHEMA.md`](wiki/SCHEMA.md) y [`outputs/SPEC.md`](outputs/SPEC.md).
@@ -111,6 +113,7 @@ Hazlo de una sentada. Un wiki a medio migrar enseña a todo el mundo la regla eq
 ## 10. Límites conocidos
 
 - **PII.** `raw/` debe estar en `.gitignore` y el wiki no debe guardar nunca teléfonos, direcciones, números de documento ni fechas de nacimiento. Es una convención más un paso de revisión; ningún script lo impone.
-- **Duplicación de idiomas.** Los perfiles multilingües duplican texto en `outputs/`, no en `wiki/`. Mantén los hechos neutrales al idioma (fechas, periodos, nombres propios) para que solo se multiplique la redacción.
-- **El CI solo protege tres cosas.** [`.github/workflows/lint.yml`](.github/workflows/lint.yml) falla si hay errores de lint estructural, si un campo `sources:` referencia `outputs/` (ley 3) y si hay algún archivo versionado dentro de `raw/`. Todo lo demás —contradicciones, deriva, un hecho que cambió sin avisar— sigue siendo una lectura completa.
+- **Duplicación de idiomas.** Los perfiles multilingües duplican texto en `outputs/`, no en `wiki/`. Mantén los hechos neutrales al idioma (fechas, periodos, nombres propios) para que solo se multiplique la redacción. Este repositorio aplica la misma regla a su propia documentación: un archivo canónico por documento más las versiones `.zh.md`/`.es.md`, que declaran de qué se tradujeron y cuándo. Los registros, los índices generados y los fragmentos para copiar están exentos: traducirlos garantiza la deriva, y la lista de exenciones vive en `scripts/check_translations.py`.
+- **Las traducciones se desincronizan.** Cada versión lleva `<!-- translation: es · canonical: <ruta> · synced: <fecha> -->`; `scripts/check_translations.py` falla si falta una o está mal etiquetada, y avisa si su fecha es anterior a la del archivo canónico. No puede saber si el *contenido* sigue coincidiendo: solo que nadie lo ha releído desde entonces. Resincroniza tras cada edición o la copia española se convertirá en la mentira más antigua del repositorio.
+- **El CI solo protege cuatro cosas.** [`.github/workflows/lint.yml`](.github/workflows/lint.yml) falla si hay errores de lint estructural, si un campo `sources:` referencia `outputs/` (ley 3), si hay algún archivo versionado dentro de `raw/` y si falta una traducción o está desfasada. Todo lo demás —contradicciones, deriva, un hecho que cambió sin avisar— sigue siendo una lectura completa.
 - **El lint comprueba estructura, no verdad.** Encuentra enlaces rotos y huérfanas. La detección de contradicciones sigue siendo tuya.
