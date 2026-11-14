@@ -51,6 +51,7 @@ outputs/              destination layer. Specs, state, drafts.
   cv/                 SPEC.md + state.md
 docs/                 worked example (fictional) — read in place, outside lint's path
 scripts/              wiki_lint.py + build_index.py + check_translations.py — stdlib only, no install step
+.translations         optional list: which docs also ship in another language (empty by default)
 ```
 
 **Everything here is English, and translations are opt-in.** Nothing ships as a `.zh.md` or `.es.md` twin. When a document needs a second language — because someone reads it who doesn't read English — add its path to `.translations` (one per line), write the sidecar with a provenance line on top, and `python scripts/check_translations.py` will keep the pair honest:
