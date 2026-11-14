@@ -1,0 +1,38 @@
+# Translation surface — one canonical markdown path per line.
+#
+# These files are required to have a `.zh.md` and an `.es.md` sidecar
+# (`scripts/check_translations.py` enforces it). Keep the list to what a reader
+# has to *understand*: the method, the contracts, the worked example.
+#
+# Deliberately NOT listed, and why:
+#   - your own wiki fact pages (the data — write them in the language you think in)
+#   - outputs/*/state.md and drafts (ledgers and per-language copy)
+#   - wiki/index.md, wiki/log.md, wiki/.page-template.md (generated / append-only / fragments)
+#
+# Adding a line is a promise: the file now ships in three languages, and
+# `check_translations.py --strict` fails when one goes stale.
+
+# The method and the rules
+README.md
+METHOD.md
+AGENTS.md
+CREDITS.md
+
+# The wiki contract and the graph
+wiki/SCHEMA.md
+wiki/graph/README.md
+
+# The outputs contract
+outputs/SPEC.md
+outputs/_template/SPEC.md
+outputs/linkedin/SPEC.md
+outputs/cv/SPEC.md
+
+# The worked example
+docs/career/README.md
+docs/career/person.md
+docs/career/employer.md
+docs/career/position.md
+docs/career/decision-register.md
+docs/career/linkedin-draft-excerpt.md
+docs/career/source-cv-2026.md

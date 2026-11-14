@@ -64,6 +64,12 @@ PII_ALLOW = "lint:allow-pii"
 # Both prefixes are accepted because the same idea got two names in practice.
 CLAIM_ID = re.compile(r"\b(?:claim|logro):([a-z0-9]+(?:-[a-z0-9]+)*)\b")
 
+# A *definition* starts a line (a bullet and an opening HTML comment are allowed),
+# because prose that says "quote claim:role-1" cites the ID, it does not define it.
+CLAIM_DEF = re.compile(
+    r"^[ \t]*(?:[-*][ \t]+)?(?:<!--[ \t]*|\[)?(?:claim|logro):([a-z0-9]+(?:-[a-z0-9]+)*)", re.M
+)
+
 # The four headings every outputs/<channel>/state.md must carry (outputs/SPEC.md).
 STATE_SECTIONS = ("Current", "Known deviations", "Versions", "Next action")
 
@@ -246,6 +252,7 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) 
     warnings: list[str] = []
     pii_findings: list[str] = []
     claim_home: dict[str, list[str]] = {}
+    claim_mentions: list[tuple[str, str, int]] = []
     owned: dict[str, str] = {}
     inbound: dict[str, set[str]] = {p.slug: set() for p in pages}
     index_links: set[str] = set()
@@ -303,12 +310,22 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) 
                 f"{page.rel}: `updated` is {(today - updated).days} days old ({updated}) — still true?"
             )
 
+        defined_at: set[int] = set()
+        for m in CLAIM_DEF.finditer(page.body):
+            cid = m.group(1)
+            if not re.search(r"-\d+$", cid):
+                errors.append(f"{page.rel}: claim ID {cid!r} must end in -<number> (e.g. claim:role-1)")
+                continue
+            defined_at.add(m.start(1))
+            claim_home.setdefault(cid, []).append(page.rel)
+
         for m in CLAIM_ID.finditer(page.body):
             cid = m.group(1)
             if not re.search(r"-\d+$", cid):
                 errors.append(f"{page.rel}: claim ID {cid!r} must end in -<number> (e.g. claim:role-1)")
                 continue
-            claim_home.setdefault(cid, []).append(page.rel)
+            if m.start(1) not in defined_at:
+                claim_mentions.append((page.rel, cid, page.body.count("\n", 0, m.start()) + 2))
 
         owns = meta.get("owns") or []
         if isinstance(owns, str):
@@ -355,6 +372,12 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) 
     for cid, where in claim_home.items():
         if len(where) > 1:
             errors.append(f"duplicate claim ID {cid!r}: {', '.join(sorted(set(where)))}")
+
+    for rel, cid, line in claim_mentions:
+        if cid not in claim_home:
+            warnings.append(
+                f"{rel}: mentions {'claim:' + cid!r} (body line {line}), which no page defines"
+            )
 
     for phrase, owner in owned.items():
         for page in pages:
@@ -417,6 +440,10 @@ def self_test() -> int:
         ("duplicate claim ID", {"entities/a.md": page("A", body="- [claim:role-1] did a thing\n"),
                                 "entities/b.md": page("B", body="- [claim:role-1] did another thing\n")},
          {}, "duplicate claim ID", ""),
+        ("claim mentioned in prose is not a definition",
+         {"entities/a.md": page("A", body="<!-- claim:role-1 -->\n- Nine years.\n"),
+          "entities/b.md": page("B", body="Drafts quote `claim:role-1`; do not restate it.\n")},
+         {}, "", ""),
         ("draft quotes an undefined claim", {"entities/a.md": page("A")},
          {"outputs/linkedin/drafts/2026-11/x.md": "Led with [claim:role-9].\n"}, "no wiki page defines", ""),
         ("state.md missing sections", {"entities/a.md": page("A")},
