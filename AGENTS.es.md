@@ -57,7 +57,7 @@ Cuatro leyes, por orden de prioridad:
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # enlaces rotos, huérfanas, frontmatter, fugas de capa
+python scripts/wiki_lint.py wiki/          # enlaces rotos, huérfanas, frontmatter, fugas de capa, PII
 python scripts/wiki_lint.py wiki/ --strict # los avisos también fallan (úsalo en CI)
 ```
 

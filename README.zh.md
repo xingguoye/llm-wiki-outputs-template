@@ -73,9 +73,10 @@ scripts/              wiki_lint.py + check_translations.py——只用标准库�
 ## 命令
 
 ```bash
-python scripts/wiki_lint.py wiki/            # 死链、孤儿、frontmatter、渠道教条泄漏
+python scripts/wiki_lint.py wiki/            # 死链、孤儿、frontmatter、渠道教条泄漏、PII
 python scripts/wiki_lint.py wiki/ --json     # 同上，机器可读（CI 用这个）
 python scripts/wiki_lint.py wiki/ --strict   # 警告也算失败，CI 可用
+python scripts/wiki_lint.py wiki/ --no-pii   # 跳过 PII 扫描（剩下的靠名字，不是模式）
 python scripts/check_translations.py         # 三语译本是否齐全、是否落后于正本
 git ls-files raw/                            # 除 raw/README.md 外必须为空
 ```
@@ -102,7 +103,8 @@ git ls-files raw/                            # 除 raw/README.md 外必须为空
 - [ ] 无电话、住址、生日、证件号、私人社媒链接。
 - [ ] `outputs/**/drafts/` 已复查——草稿泄 PII 比 wiki 页更常见。
 - [ ] `outputs/*/SPEC.md` 已通用化：平台上限是公开信息，你的个人实测值（「实测 75 字符」）不是。
-- [ ] 跑 `grep -ri "<你的姓>" . --exclude-dir=.git`，以及每个雇主、客户名。
+- [ ] `wiki_lint.py` 无报错——它会抓页面与草稿里的邮箱、电话、绝对路径。
+- [ ] 再跑 `grep -ri "<你的姓>" . --exclude-dir=.git`，以及每个雇主、客户名：姓名和街道地址没法用模式抓。
 
 ## 来源与许可
 

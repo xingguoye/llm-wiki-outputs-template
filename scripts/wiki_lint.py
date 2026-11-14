@@ -13,7 +13,10 @@ error   broken wikilink            [[slug]] with no page of that name
 error   missing/invalid frontmatter required keys absent, unparsable block
 error   unknown page type          not in --types (default: source, entity, concept, synthesis)
 error   outputs cited as a source  `sources:` may not point outside wiki/
+error   source page does not exist `sources:` names a slug with no page under wiki/sources/
+error   frontmatter key in body    `title:` / `created:` repeated below the `---` block
 error   duplicate slug             two pages resolve to the same [[slug]]
+error   personal data              email, phone, or absolute home path in a wiki page or draft
 warn    orphan page                no inbound wikilink (index.md counts)
 warn    index-only page            linked from index.md and nowhere else
 warn    channel rule in a fact page  character limits, page counts, "Headline", "Skills 50"
@@ -35,6 +38,23 @@ DEFAULT_TYPES = ("source", "entity", "concept", "synthesis")
 REQUIRED_KEYS = ("type", "title", "created", "updated")
 
 WIKILINK = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
+
+# A frontmatter key repeated below the `---` block. This happens when a batch
+# fix writes the header twice; the frontmatter parses fine and the page looks
+# valid, so only a body scan catches it.
+BODY_KEY = re.compile(r"^(title|created|updated|type|kind|tags|sources|raw|ingested)\s*:", re.M)
+
+# Personal data that must never reach wiki/ or a draft. Deliberately narrow:
+# a false positive here trains people to ignore the check.
+PII_PATTERNS = [
+    (re.compile(r"[\w.+-]+@[\w-]+\.[\w.]{2,}"), "email address"),
+    (re.compile(r"\+(?:34|1|44|86)[\s.-]?\(?\d{2,3}\)?[\s.-]?\d{3}[\s.-]?\d{2,3}"), "phone number"),
+    (re.compile(r"\b[67]\d{2}[\s.-]\d{3}[\s.-]\d{3}\b"), "phone number"),
+    (re.compile(r"\b[A-Za-z]:\\"), "absolute Windows path"),
+    (re.compile(r"(?:/Users/|/home/)[\w.-]+"), "absolute home path"),
+]
+# Escape hatch for a page that must show a contact line: `<!-- lint:allow-pii -->`.
+PII_ALLOW = "lint:allow-pii"
 
 # Words that only make sense in a destination spec, not in a fact page.
 CHANNEL_PATTERNS = [
@@ -140,15 +160,46 @@ def as_date(value: object) -> date | None:
     return None
 
 
-def lint(root: Path, types: tuple[str, ...], stale_days: int) -> dict[str, list[str]]:
+def scan_drafts(root: Path) -> list[str]:
+    """Personal data in `outputs/**/drafts/**`. Drafts are where a resume line
+    gets pasted verbatim, so they need the same scan as fact pages."""
+    findings: list[str] = []
+    outputs = root.parent / "outputs"
+    if not outputs.is_dir():
+        return findings
+    for path in sorted(outputs.rglob("*.md")):
+        rel = path.relative_to(root.parent).as_posix()
+        if "/drafts/" not in f"/{rel}":
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            findings.append(f"{rel}: cannot read for the PII scan ({exc})")
+            continue
+        if PII_ALLOW in text:
+            continue
+        for line_no, line in enumerate(text.splitlines(), 1):
+            if PII_ALLOW in line:
+                continue
+            for pattern, why in PII_PATTERNS:
+                hit = pattern.search(line)
+                if hit:
+                    findings.append(f"{rel}: {why} in a draft, line {line_no} ({hit.group(0)!r})")
+                    break
+    return findings
+
+
+def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) -> dict[str, list[str]]:
     pages = collect(root)
     by_slug: dict[str, list[Page]] = {}
     for page in pages:
         parse_frontmatter(page)
         by_slug.setdefault(page.slug, []).append(page)
+    source_slugs = {p.slug for p in pages if p.rel.startswith("sources/")}
 
     errors: list[str] = []
     warnings: list[str] = []
+    pii_findings: list[str] = []
     inbound: dict[str, set[str]] = {p.slug: set() for p in pages}
     today = date.today()
 
@@ -172,6 +223,27 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int) -> dict[str, list[
                 continue
             if src.startswith("outputs/") or re.match(r"^\.\./outputs", src):
                 errors.append(f"{page.rel}: cites {src!r} as a source — outputs are not evidence (law 3)")
+            elif src not in source_slugs:
+                hint = " — cite the page slug, not the file name" if ("/" in src or re.search(r"\.\w+$", src)) else ""
+                errors.append(
+                    f"{page.rel}: cites {src!r} as a source, but wiki/sources/ has no such page{hint}"
+                )
+
+        for m in BODY_KEY.finditer(page.body):
+            line_no = page.body[: m.start()].count("\n") + 1
+            errors.append(
+                f"{page.rel}: frontmatter key `{m.group(1)}:` repeated in the body (body line {line_no}) "
+                f"— write it once, above the closing ---"
+            )
+
+        for line_no, line in enumerate(page.body.splitlines(), 1):
+            if not pii or PII_ALLOW in line:
+                continue
+            for pattern, why in PII_PATTERNS:
+                hit = pattern.search(line)
+                if hit:
+                    pii_findings.append(f"{page.rel}: {why} in a fact page ({hit.group(0)!r}) — PII stays in raw/")
+                    break
 
         updated = as_date(meta.get("updated"))
         if updated is not None and (today - updated).days > stale_days:
@@ -219,10 +291,14 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int) -> dict[str, list[
         elif links == {"index"}:
             warnings.append(f"{page.rel}: linked only from index.md — give it a home in the prose")
 
+    if pii:
+        pii_findings.extend(scan_drafts(root))
+
     return {
         "pages": [p.rel for p in pages],
         "errors": sorted(set(errors)),
         "warnings": sorted(set(warnings)),
+        "pii": sorted(set(pii_findings)),
     }
 
 
@@ -232,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--types", default=",".join(DEFAULT_TYPES), help="allowed frontmatter types")
     ap.add_argument("--stale-days", type=int, default=180, help="warn when `updated` is older")
     ap.add_argument("--strict", action="store_true", help="warnings fail the run too")
+    ap.add_argument("--no-pii", action="store_true", help="skip the personal-data scan (pages and drafts)")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     args = ap.parse_args(argv)
 
@@ -240,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"not a directory: {root}", file=sys.stderr)
         return 2
     types = tuple(t.strip() for t in args.types.split(",") if t.strip())
-    result = lint(root, types, args.stale_days)
+    result = lint(root, types, args.stale_days, pii=not args.no_pii)
 
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -253,14 +330,18 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\nErrors ({len(result['errors'])}):")
             for e in result["errors"]:
                 print(f"  - {e}")
+        if result["pii"]:
+            print(f"\nPersonal data ({len(result['pii'])}):")
+            for p in result["pii"]:
+                print(f"  - {p}")
         if result["warnings"]:
             print(f"\nWarnings ({len(result['warnings'])}):")
             for w in result["warnings"]:
                 print(f"  - {w}")
-        if not result["errors"] and not result["warnings"]:
+        if not result["errors"] and not result["pii"] and not result["warnings"]:
             print("\nNo issues found.")
 
-    if result["errors"]:
+    if result["errors"] or result["pii"]:
         return 1
     if args.strict and result["warnings"]:
         return 1

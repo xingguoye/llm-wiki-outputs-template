@@ -57,7 +57,7 @@
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # 死链、孤儿页、frontmatter、跨层泄漏
+python scripts/wiki_lint.py wiki/          # 死链、孤儿页、frontmatter、跨层泄漏、PII
 python scripts/wiki_lint.py wiki/ --strict # 警告也算失败（CI 用）
 ```
 

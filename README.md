@@ -73,9 +73,10 @@ Eight files stay single-language on purpose, and the script carries that exempti
 ## Commands
 
 ```bash
-python scripts/wiki_lint.py wiki/            # broken links, orphans, frontmatter, layer leaks
+python scripts/wiki_lint.py wiki/            # links, orphans, frontmatter, layer leaks, PII
 python scripts/wiki_lint.py wiki/ --json     # same, machine-readable (CI uses this)
 python scripts/wiki_lint.py wiki/ --strict   # warnings fail too; use in CI
+python scripts/wiki_lint.py wiki/ --no-pii   # skip the PII scan (names, not patterns, are the rest)
 git ls-files raw/                            # must be empty except raw/README.md
 ```
 
@@ -101,7 +102,8 @@ Full reasoning, failure taxonomy, and migration steps: [METHOD.md](METHOD.md).
 - [ ] No phone numbers, addresses, dates of birth, ID numbers, links to private profiles.
 - [ ] `outputs/**/drafts/` reviewed — drafts leak PII more often than wiki pages do.
 - [ ] `outputs/*/SPEC.md` generalized: platform limits are public, your personal metrics ("75 chars measured") are not.
-- [ ] Run `grep -ri "<your surname>" . --exclude-dir=.git` and the same for every employer and client.
+- [ ] `wiki_lint.py` clean — it flags emails, phones and absolute home paths in pages and drafts.
+- [ ] Then `grep -ri "<your surname>" . --exclude-dir=.git` and the same for every employer and client: names and street addresses are not pattern-detectable.
 
 ## Credits
 

@@ -127,7 +127,7 @@ Una especificación de canal no debe contener hechos. Apunta a slugs del wiki y 
 
 ## Cadencia de lint
 
-- Lint estructural tras cada ingesta: `python scripts/wiki_lint.py wiki/` (añade `--strict` en CI).
+- Lint estructural tras cada ingesta: `python scripts/wiki_lint.py wiki/` (añade `--strict` en CI). Falla con enlaces rotos, frontmatter ausente, slugs de `sources:` sin página en `wiki/sources/`, claves de frontmatter repetidas en el cuerpo y patrones de PII (correo, teléfono, ruta absoluta) en páginas o borradores.
 - Lectura completa en busca de contradicciones cada 5 ingestas.
 - Opcional, si la skill `llm-wiki` está instalada: `wiki_stats.py` una vez al mes para la deriva y `wiki_graph_lint.py` antes de reconstruir el grafo.
 

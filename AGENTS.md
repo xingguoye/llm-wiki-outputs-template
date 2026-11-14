@@ -55,7 +55,7 @@ Four laws, in priority order:
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # dead links, orphans, frontmatter, layer leaks
+python scripts/wiki_lint.py wiki/          # dead links, orphans, frontmatter, layer leaks, PII
 python scripts/wiki_lint.py wiki/ --strict # warnings fail too (use in CI)
 ```
 

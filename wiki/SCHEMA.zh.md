@@ -127,7 +127,7 @@ outputs/<channel>/
 
 ## Lint 节奏
 
-- 每次摄入后做结构 lint：`python scripts/wiki_lint.py wiki/`（CI 里加 `--strict`）。
+- 每次摄入后做结构 lint：`python scripts/wiki_lint.py wiki/`（CI 里加 `--strict`）。它会因死链、缺 frontmatter、`sources:` 指向不存在的 `wiki/sources/` 页、正文重复 frontmatter 键、以及页面或草稿里的 PII 模式（邮箱、电话、绝对路径）而失败。
 - 每 5 次摄入做一次通读，找矛盾。
 - 可选，若装了 `llm-wiki` 技能：每月用 `wiki_stats.py` 看漂移，重建图层前用 `wiki_graph_lint.py`。
 

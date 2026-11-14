@@ -73,9 +73,10 @@ Ocho archivos se quedan en un solo idioma a propósito, y la lista de exenciones
 ## Comandos
 
 ```bash
-python scripts/wiki_lint.py wiki/            # enlaces rotos, huérfanas, frontmatter, fugas de capa
+python scripts/wiki_lint.py wiki/            # enlaces, huérfanas, frontmatter, fugas de capa, PII
 python scripts/wiki_lint.py wiki/ --json     # igual, legible por máquina (lo usa el CI)
 python scripts/wiki_lint.py wiki/ --strict   # los avisos también fallan; úsalo en CI
+python scripts/wiki_lint.py wiki/ --no-pii   # omite el escaneo de PII (lo demás son nombres, no patrones)
 python scripts/check_translations.py         # traducciones completas y al día
 git ls-files raw/                            # debe estar vacío salvo raw/README.md
 ```
@@ -102,7 +103,8 @@ Razonamiento completo, taxonomía de fallos y pasos de migración: [METHOD.es.md
 - [ ] Sin teléfonos, direcciones, fechas de nacimiento, números de documento ni enlaces a perfiles privados.
 - [ ] `outputs/**/drafts/` revisado: los borradores filtran PII más a menudo que las páginas del wiki.
 - [ ] `outputs/*/SPEC.md` generalizado: los límites de plataforma son públicos, tus métricas personales ("75 caracteres medidos") no.
-- [ ] Ejecuta `grep -ri "<tu apellido>" . --exclude-dir=.git` y lo mismo con cada empleador y cliente.
+- [ ] `wiki_lint.py` limpio: marca correos, teléfonos y rutas absolutas en páginas y borradores.
+- [ ] Después ejecuta `grep -ri "<tu apellido>" . --exclude-dir=.git` y lo mismo con cada empleador y cliente: los nombres y las direcciones no se detectan por patrón.
 
 ## Créditos
 
