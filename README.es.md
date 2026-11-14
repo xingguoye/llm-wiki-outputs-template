@@ -5,6 +5,8 @@ Una plantilla para una base de conocimiento personal que alimenta **varios desti
 
 Es el patrón "LLM Wiki" (fuentes inmutables → wiki en markdown mantenida por el LLM → bucle de lint y consulta) con una diferencia estructural: una **capa de salidas** aparte que guarda las reglas de cada destino, para que esas reglas nunca se filtren a los hechos.
 
+La wiki la escribe y la mantiene un agente. Mete un CV nuevo, la transcripción de una llamada o una oferta en `raw/`, pídele que lo ingeste y editará solo las páginas que ese hecho nuevo toca: tú revisas el diff, él teclea.
+
 - [English](README.md) · [中文](README.zh.md) · [Español](README.es.md) · [Método](METHOD.md)
 
 [![lint](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml/badge.svg)](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml)

@@ -5,6 +5,8 @@
 
 它是 "LLM Wiki" 模式（不可变来源 → 由 LLM 维护的 markdown wiki → lint / 查询循环），只多了一处结构性差异：一层独立的**产出层**，用来存放每个去处的规则，让这些规则永远不会渗回事实里。
 
+wiki 本身由 agent 撰写和维护。把新的 CV、一次电话的转写或一份职位描述丢进 `raw/`，让它 ingest，它只改这条新事实牵连到的页面——你审 diff，它负责打字。
+
 - [English](README.md) · [中文](README.zh.md) · [Español](README.es.md) · [方法](METHOD.md)
 
 [![lint](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml/badge.svg)](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml)

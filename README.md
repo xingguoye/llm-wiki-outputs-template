@@ -4,6 +4,8 @@ A template for a personal knowledge base that feeds **several destinations** —
 
 It is the "LLM Wiki" pattern (immutable sources → LLM-maintained markdown wiki → lint/query loop) with one structural addition: a separate **outputs layer** that holds the rules of each destination, so those rules never leak into the facts.
 
+The wiki itself is written and maintained by an agent. Drop a new CV, a call transcript or a job description into `raw/`, ask it to ingest, and it edits only the pages that new fact touches — you review the diff, it does the typing.
+
 - [English](README.md) · [中文](README.zh.md) · [Español](README.es.md) · [Method](METHOD.md)
 
 [![lint](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml/badge.svg)](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml)
