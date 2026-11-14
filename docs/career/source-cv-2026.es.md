@@ -1,4 +1,4 @@
-<!-- translation: es · canonical: docs/career/source.md · synced: 2026-11-14 -->
+<!-- translation: es · canonical: docs/career/source-cv-2026.md · synced: 2026-11-14 -->
 
 ---
 title: "Fuente: CV 2026 (PDF)"

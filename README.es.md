@@ -52,7 +52,7 @@ outputs/              capa de destino. Especificaciones, estado, borradores.
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
 docs/                 ejemplo resuelto (ficticio) — se lee in situ, fuera del lint
-scripts/              wiki_lint.py + check_translations.py — solo biblioteca estándar, sin instalación
+scripts/              wiki_lint.py + build_index.py + check_translations.py — solo biblioteca estándar, sin instalación
 ```
 
 ¿Quieres ver las convenciones en uso antes de escribir nada? Lee [`docs/career/`](docs/career/README.md) in situ: cinco páginas ficticias, en orden de lectura. Están deliberadamente fuera de `wiki/` para que no afecten al lint ni a la búsqueda.
@@ -73,17 +73,19 @@ Ocho archivos se quedan en un solo idioma a propósito, y la lista de exenciones
 ## Comandos
 
 ```bash
-python scripts/wiki_lint.py wiki/            # enlaces, huérfanas, frontmatter, fugas de capa, PII
+python scripts/wiki_lint.py wiki/            # enlaces, huérfanas, frontmatter, fugas de capa, claim IDs, forma de state, PII
 python scripts/wiki_lint.py wiki/ --json     # igual, legible por máquina (lo usa el CI)
 python scripts/wiki_lint.py wiki/ --strict   # los avisos también fallan; úsalo en CI
 python scripts/wiki_lint.py wiki/ --no-pii   # omite el escaneo de PII (lo demás son nombres, no patrones)
+python scripts/wiki_lint.py --self-test      # comprueba el comprobador contra nueve casos malos conocidos
+python scripts/build_index.py wiki/          # regenera wiki/index.md desde las páginas (--check solo verifica)
 python scripts/check_translations.py         # traducciones completas y al día
 git ls-files raw/                            # debe estar vacío salvo raw/README.md
 ```
 
 Sin dependencias, sin instalación. Python 3.9+. Devuelve 1 cuando hay errores, así que entra directo en CI — ver [.github/workflows/lint.yml](.github/workflows/lint.yml), que además hace cumplir la privacidad de `raw/` y la ley 3.
 
-Más allá de la estructura, la única comprobación que importa es una lectura completa: dos páginas afirmando la misma fecha de forma distinta, una afirmación cuya fuente desapareció, un hecho que cambió mientras un borrador conservaba el valor viejo. Ese es el trabajo del LLM, no del script.
+Más allá de la estructura, las comprobaciones que siguen necesitando a una persona son las del significado: dos páginas afirmando la misma fecha de forma distinta, una afirmación cuya fuente desapareció, un hecho que cambió mientras un borrador conservaba el valor viejo. El script ya cubre la mitad mecánica —IDs de claim duplicados, un borrador que cita un claim no definido, un `state.md` al que le falta una sección del contrato, patrones de PII— y ahí se detiene. El significado es trabajo del LLM.
 
 Opcional, si quieres búsqueda semántica o la capa de grafo: viven en la skill de agente `llm-wiki`, de la que esta plantilla toma sus convenciones (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`). Instálala y apunta sus scripts a tu `wiki/`. La plantilla funciona sin ellas: el markdown es la fuente canónica.
 

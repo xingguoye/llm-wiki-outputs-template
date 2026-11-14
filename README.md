@@ -50,7 +50,7 @@ outputs/              destination layer. Specs, state, drafts.
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
 docs/                 worked example (fictional) — read in place, outside lint's path
-scripts/              wiki_lint.py + check_translations.py — stdlib only, no install step
+scripts/              wiki_lint.py + build_index.py + check_translations.py — stdlib only, no install step
 ```
 
 Every doc a person reads to learn or write the method has a `.zh.md` and `.es.md` twin; the file without a suffix is canonical. Ledgers, the generated index and the page template stay English.
@@ -73,16 +73,19 @@ Eight files stay single-language on purpose, and the script carries that exempti
 ## Commands
 
 ```bash
-python scripts/wiki_lint.py wiki/            # links, orphans, frontmatter, layer leaks, PII
+python scripts/wiki_lint.py wiki/            # links, orphans, frontmatter, layer leaks, claim IDs, state shape, PII
 python scripts/wiki_lint.py wiki/ --json     # same, machine-readable (CI uses this)
 python scripts/wiki_lint.py wiki/ --strict   # warnings fail too; use in CI
 python scripts/wiki_lint.py wiki/ --no-pii   # skip the PII scan (names, not patterns, are the rest)
+python scripts/wiki_lint.py --self-test      # check the checker against nine known-bad fixtures
+python scripts/build_index.py wiki/          # rewrite wiki/index.md from the pages (--check to verify)
+python scripts/check_translations.py         # three-language coverage and freshness
 git ls-files raw/                            # must be empty except raw/README.md
 ```
 
 No dependencies, no install. Python 3.9+. It exits 1 on errors, so it drops straight into CI — see [.github/workflows/lint.yml](.github/workflows/lint.yml), which also enforces the raw/ privacy rule and law 3.
 
-Beyond structure, the only check that matters is a read-through: two pages asserting the same date differently, a claim whose source vanished, a fact that changed while a draft kept the old value. That is the job the LLM does, not the script.
+Beyond structure, the checks that still need a human are the ones about meaning: two pages asserting the same date differently, a claim whose source vanished, a fact that changed while a draft kept the old value. The script now catches the mechanical half — duplicated claim IDs, a draft citing a claim no page defines, a `state.md` that dropped a contract section, PII patterns — and stops there. Meaning is the job the LLM does.
 
 Optional, if you want semantic search or the graph layer: they live in the `llm-wiki` agent skill this template borrows its conventions from (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`). Install it, point the scripts at your `wiki/`. The template works without them — markdown is canonical.
 

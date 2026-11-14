@@ -71,6 +71,20 @@ updated: 2026-01-31
 
 事实要原子化。"截至 2026-11 共 9 年 6 个月"属于人物页；职位页写 "2020-01 → 2024-02"，总数链接到人物页。两页绝不可各自独立地写出同一个总数。
 
+## Claim ID
+
+**claim** 是你绝不希望存在两个版本的句子：总数、范围、资历词、工作形式（on-site/hybrid）、职位名。等草稿需要指向它时再给 ID，不必提前。
+
+```
+<!-- claim:person-1 -->
+Nine years six months of paid work as of 2026-11.
+```
+
+- 格式：`claim:<slug>-<n>`，`<slug>` 是页面自己的 slug，`<n>` 是任意数字——`claim:person-1`、`logro:employer-3` 都能解析。
+- 只在**拥有**该事实的页面上定义一次。重复 ID 是 error：两个页面声明同一个 ID，正是 claim ID 要防的 bug。
+- 草稿里在渲染出的句子旁用 `<!-- claim:person-1 -->` 引用。若草稿引用了没有页面定义的 ID，lint 失败——草稿不能凭空造事实。
+- 删除 claim：连同 ID 一起删，并修好引用它的草稿。永远不要重新编号。
+
 ## 篇幅
 
 - 软上限：400 行 / 约 2,000 词。超过就拆。
@@ -117,7 +131,7 @@ outputs/<channel>/
 1. 把文件复制进 `raw/`；之后永不编辑它。
 2. 写 `wiki/sources/<slug>.md`：它是什么、哪里有用、哪里不可靠、喂养哪些页面。
 3. 更新它触及的每个实体/概念页。若与其他页矛盾，在*拥有*该事实的页面里解决，并在 `log.md` 记录。
-4. 把新页加入 `index.md`。
+4. 把新页加入 `index.md`——若 index 是生成的，跑 `python scripts/build_index.py wiki/`。
 5. 追加到 `log.md`。
 6. 跑 `python scripts/wiki_lint.py wiki/`。
 
@@ -127,7 +141,8 @@ outputs/<channel>/
 
 ## Lint 节奏
 
-- 每次摄入后做结构 lint：`python scripts/wiki_lint.py wiki/`（CI 里加 `--strict`）。它会因死链、缺 frontmatter、`sources:` 指向不存在的 `wiki/sources/` 页、正文重复 frontmatter 键、以及页面或草稿里的 PII 模式（邮箱、电话、绝对路径）而失败。
+- 每次摄入后做结构 lint：`python scripts/wiki_lint.py wiki/`（CI 里加 `--strict`）。失败项：死链或坏链、缺 frontmatter、`sources:` 指向不存在的 `wiki/sources/` 页、正文重复 frontmatter 键、重复 claim ID、草稿引用未定义的 claim、`outputs/*/state.md` 缺四节契约之一、页面或草稿里的 PII 模式（邮箱、电话、绝对路径）。警告项：`updated` 过旧、孤儿页（无页面链入；只被 index 收录也算警告）、事实被并不拥有它的页面复述。
+- `index.md` 若是生成的，用 `python scripts/build_index.py wiki/ --check` 校验；`--self-test` 可证明检查器仍能抓出上述全部问题。
 - 每 5 次摄入做一次通读，找矛盾。
 - 可选，若装了 `llm-wiki` 技能：每月用 `wiki_stats.py` 看漂移，重建图层前用 `wiki_graph_lint.py`。
 

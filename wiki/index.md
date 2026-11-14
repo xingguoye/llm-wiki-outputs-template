@@ -1,6 +1,6 @@
 # Index
 
-Every page in the wiki, one line each. Update this file whenever a page is created or deleted — `wiki_lint.py` does not check completeness, so this is a manual discipline.
+Every page in the wiki, one line each. Update this file whenever a page is created or deleted — `wiki_lint.py` does not check completeness, so this is a manual discipline. Once you have pages, `python scripts/build_index.py wiki/` rewrites this file in the same shape (and `--check` fails when it drifts); keep the slug notes below if you want them.
 
 Legend: `slug` — one-line what it is. Keep entries alphabetical inside each section.
 

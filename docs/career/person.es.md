@@ -17,6 +17,7 @@ Desarrolladora full-stack con sesgo backend, residente en Madrid. Española nati
 
 ## Totales (los posee esta página)
 
+<!-- claim:person-1 -->
 - Experiencia total: **7+ años** (a fecha de 2026-01; = los cuatro periodos de la página del empleador)
 - Frontend: **2 años**; móvil: **8 meses**
 - Eje de stack: .NET Framework → .NET 8

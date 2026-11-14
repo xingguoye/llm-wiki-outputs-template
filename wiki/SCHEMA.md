@@ -69,6 +69,20 @@ Rules that keep lint green:
 
 Keep facts atomic. "9 years 6 months as of 2026-11" belongs on the person page; a position page says "2020-01 → 2024-02" and links to the person page for the total. Two pages must never independently state the same total.
 
+## Claim IDs
+
+A **claim** is a sentence you would not want two versions of: a total, a scope, a seniority word, an arrangement (on-site/hybrid), a title. Give one an ID when a draft needs to point at it, not before.
+
+```
+<!-- claim:person-1 -->
+Nine years six months of paid work as of 2026-11.
+```
+
+- Format: `claim:<slug>-<n>`, where `<slug>` is the page's own slug and `<n>` is any number — `claim:person-1`, `logro:employer-3` both parse.
+- Defined on the page that **owns** the fact, once. A duplicate ID is an error: two pages claiming the same ID is the bug claim IDs exist to prevent.
+- Quoted from a draft as `<!-- claim:person-1 -->` next to the sentence it renders. If the draft names an ID no page defines, lint fails — drafting cannot invent facts.
+- Deleting a claim: delete the ID with it and fix the drafts that quoted it. Never re-number.
+
 ## Sizing
 
 - Soft cap: 400 lines / ~2,000 words. Split beyond that.
@@ -115,7 +129,7 @@ A channel spec must not contain facts. It points at wiki slugs and states constr
 1. Copy the file into `raw/`; never edit it afterwards.
 2. Write `wiki/sources/<slug>.md`: what it is, what it's good for, what's unreliable, which pages it feeds.
 3. Update every entity/concept page it touches. If it contradicts an existing page, resolve the contradiction in the page that *owns* the fact, and note it in `log.md`.
-4. Add the new pages to `index.md`.
+4. Add the new pages to `index.md` — or, if you generate it, `python scripts/build_index.py wiki/`.
 5. Append to `log.md`.
 6. Run `python scripts/wiki_lint.py wiki/`.
 
@@ -125,7 +139,8 @@ A channel spec must not contain facts. It points at wiki slugs and states constr
 
 ## Lint cadence
 
-- Structural lint after every ingest: `python scripts/wiki_lint.py wiki/` (add `--strict` in CI). It fails on dead links, missing frontmatter, `sources:` slugs with no page under `wiki/sources/`, frontmatter keys repeated in the body, and PII patterns (email, phone, absolute home path) in pages or drafts.
+- Structural lint after every ingest: `python scripts/wiki_lint.py wiki/` (add `--strict` in CI). It fails on: dead or malformed links; missing frontmatter; `sources:` slugs with no page under `wiki/sources/`; frontmatter keys repeated in the body; duplicate claim IDs; a draft quoting an undefined claim; an `outputs/*/state.md` missing one of the four contract sections; PII patterns (email, phone, absolute home path) in pages or drafts. Warnings cover: stale `updated`, orphan pages (linked from no page — index-only counts as a warning), and a fact restated on a page that does not own it.
+- `python scripts/build_index.py wiki/ --check` when `index.md` is generated rather than hand-written; `--self-test` proves the checker still catches all of the above.
 - Read-through for contradictions after every 5 ingests.
 - Optional, if the `llm-wiki` skill is installed: `wiki_stats.py` monthly for drift, `wiki_graph_lint.py` before any graph rebuild.
 

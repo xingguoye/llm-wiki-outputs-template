@@ -33,8 +33,8 @@ Four laws, in priority order:
 2. Write `wiki/sources/<slug>.md`: what it is, what it is good for, what is unreliable, which pages it feeds.
 3. Update each affected entity/concept page. One fact per line, period first when a period exists.
 4. If it contradicts an existing page, resolve it in the page that **owns** the fact, and note the resolution in `log.md`.
-5. Add the new pages to `index.md`; append an `ingest` entry to `log.md`.
-6. Run `python scripts/wiki_lint.py wiki/`. Dead links and orphans are yours to fix before reporting done.
+5. Add the new pages to `index.md` (or run `python scripts/build_index.py wiki/`); append an `ingest` entry to `log.md`.
+6. Run `python scripts/wiki_lint.py wiki/`. Dead links, ghost `sources:` slugs and duplicates are yours to fix before reporting done.
 
 ### Answer a question about the wiki
 
@@ -48,18 +48,22 @@ Four laws, in priority order:
 1. Read `outputs/<channel>/SPEC.md` and the wiki pages in its fact map.
 2. Draft into `outputs/<channel>/drafts/<YYYY-MM>/`, one file per language.
 3. Measure limits with a script (`len()`), not by eye. Fix the draft if over — never the wiki, unless a fact is wrong.
-4. Walk the spec's acceptance checklist and forbidden list.
-5. Update `outputs/<channel>/state.md`: version, date, measured values, deviations.
-6. Append an `output` entry to `wiki/log.md` linking the state entry.
+4. Quote the fact's claim ID (`<!-- claim:person-1 -->`) next to each sentence you render from a page. Lint fails if you invent one.
+5. Walk the spec's acceptance checklist and forbidden list.
+6. Update `outputs/<channel>/state.md`: version, date, measured values, deviations. The four contract sections must stay (`Current`, `Known deviations`, `Versions`, `Next action`).
+7. Append an `output` entry to `wiki/log.md` linking the state entry.
 
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # dead links, orphans, frontmatter, layer leaks, PII
+python scripts/wiki_lint.py wiki/          # links, orphans, frontmatter, layer leaks, claim IDs, state shape, PII
 python scripts/wiki_lint.py wiki/ --strict # warnings fail too (use in CI)
+python scripts/wiki_lint.py --self-test    # prove the checker still catches its nine fixtures
 ```
 
-That script is the whole toolchain in this repo — stdlib only. Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
+Before reporting done, everything the lint prints as an error is yours to fix. Warnings are judgement calls: a page linked only from `index.md` needs a home in the prose, a "restates" warning means a fact escaped the page that owns it.
+
+That script is the whole toolchain in this repo — stdlib only. `build_index.py` regenerates `wiki/index.md`; `check_translations.py` answers "is every translation present and current?". Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
 
 Report findings as a list with file:line. Fix mechanical issues (dead links, missing frontmatter); propose content changes rather than making them silently.
 

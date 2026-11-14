@@ -15,6 +15,7 @@ Backend-leaning full-stack developer based in Madrid. Spanish native, English wo
 
 ## Totals (this page owns them)
 
+<!-- claim:person-1 -->
 - Total experience: **7+ years** (as of 2026-01; = the four spans on the employer page)
 - Frontend: **2 years**; mobile: **8 months**
 - Stack axis: .NET Framework → .NET 8

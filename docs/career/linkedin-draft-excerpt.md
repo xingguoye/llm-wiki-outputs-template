@@ -20,6 +20,17 @@ My core is C# and .NET: APIs, integrations, and the unglamorous middle layer
 between a legacy reporting stack and something that can be tested.
 ```
 
+## Claim IDs
+
+The About paragraph renders the total that `person.md` owns. The draft points at the claim instead of restating it as an independent fact:
+
+```markdown
+<!-- claim:person-1 -->
+over seven years building business systems
+```
+
+If `person.md` stops defining `claim:person-1`, `wiki_lint.py` fails: a draft may quote a fact, never invent the page that should own it.
+
 ## Experience entry
 
 ```

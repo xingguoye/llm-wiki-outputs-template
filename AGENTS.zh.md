@@ -35,8 +35,8 @@
 2. 写 `wiki/sources/<slug>.md`：它是什么、哪里有用、哪里不可靠、喂养哪些页面。
 3. 更新每一个受影响的实体/概念页。一行一个事实，有时间段时先写时间段。
 4. 若它与其他页面矛盾，在**拥有**该事实的页面里解决，并在 `log.md` 记下结论。
-5. 把新页加入 `index.md`；向 `log.md` 追加一条 `ingest` 记录。
-6. 跑 `python scripts/wiki_lint.py wiki/`。死链和孤儿页要在报告完成前修掉。
+5. 把新页加入 `index.md`（或跑 `python scripts/build_index.py wiki/`）；向 `log.md` 追加一条 `ingest` 记录。
+6. 跑 `python scripts/wiki_lint.py wiki/`。死链、幽灵 `sources:` slug 和重复项都要在报告完成前修掉。
 
 ### 回答关于 wiki 的问题
 
@@ -50,18 +50,22 @@
 1. 读 `outputs/<channel>/SPEC.md` 及其事实映射里的 wiki 页。
 2. 草稿写进 `outputs/<channel>/drafts/<YYYY-MM>/`，每种语言一个文件。
 3. 用脚本（`len()`）量上限，不要目测。超了就改草稿——不要改 wiki，除非事实确实错了。
-4. 走一遍规格里的验收清单与禁写项。
-5. 更新 `outputs/<channel>/state.md`：版本、日期、实测值、偏差。
-6. 向 `wiki/log.md` 追加一条 `output` 记录，链接到 state 条目。
+4. 每句从 wiki 渲染出来的话，旁边标出它的事实 claim ID（`<!-- claim:person-1 -->`）。凭空写 ID 会让 lint 失败。
+5. 走一遍规格里的验收清单与禁写项。
+6. 更新 `outputs/<channel>/state.md`：版本、日期、实测值、偏差。四节契约必须保留（`Current`、`Known deviations`、`Versions`、`Next action`）。
+7. 向 `wiki/log.md` 追加一条 `output` 记录，链接到 state 条目。
 
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # 死链、孤儿页、frontmatter、跨层泄漏、PII
+python scripts/wiki_lint.py wiki/          # 死链、孤儿页、frontmatter、跨层泄漏、claim ID、state 形状、PII
 python scripts/wiki_lint.py wiki/ --strict # 警告也算失败（CI 用）
+python scripts/wiki_lint.py --self-test    # 证明检查器仍能抓出那九组样例
 ```
 
-这个脚本就是本仓库的全部工具链——只用标准库。语义检索与图层是可选项，属于 `llm-wiki` 技能（`wiki_search.py`、`wiki_stats.py`、`wiki_graph_*.py`）；想要就装那个技能。
+报告完成前，lint 打出的每个 error 都是你要修的。警告是判断题：只被 `index.md` 链入的页面需要在正文里找个归宿；"restates" 警告表示某个事实跑到了不拥有它的页面上。
+
+这个脚本就是本仓库的全部工具链——只用标准库。`build_index.py` 重新生成 `wiki/index.md`；`check_translations.py` 回答"译本是否齐全、是否落后"。语义检索与图层是可选项，属于 `llm-wiki` 技能（`wiki_search.py`、`wiki_stats.py`、`wiki_graph_*.py`）；想要就装那个技能。
 
 以 file:line 的列表形式报告发现。机械问题（死链、缺 frontmatter）直接修；内容改动先提议，不要悄悄做。
 

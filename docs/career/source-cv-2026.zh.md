@@ -1,4 +1,4 @@
-<!-- translation: zh · canonical: docs/career/source.md · synced: 2026-11-14 -->
+<!-- translation: zh · canonical: docs/career/source-cv-2026.md · synced: 2026-11-14 -->
 
 ---
 title: "来源：CV 2026（PDF）"

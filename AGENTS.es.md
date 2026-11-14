@@ -35,8 +35,8 @@ Cuatro leyes, por orden de prioridad:
 2. Escribe `wiki/sources/<slug>.md`: qué es, para qué sirve, qué resulta poco fiable, qué páginas alimenta.
 3. Actualiza cada página de entidad o concepto afectada. Un hecho por línea, el periodo primero cuando exista periodo.
 4. Si contradice una página existente, resuélvelo en la página que **posee** el hecho y anota la resolución en `log.md`.
-5. Añade las páginas nuevas a `index.md`; añade una entrada `ingest` a `log.md`.
-6. Ejecuta `python scripts/wiki_lint.py wiki/`. Los enlaces rotos y las huérfanas son tuyos: arréglalos antes de dar nada por terminado.
+5. Añade las páginas nuevas a `index.md` (o ejecuta `python scripts/build_index.py wiki/`); añade una entrada `ingest` a `log.md`.
+6. Ejecuta `python scripts/wiki_lint.py wiki/`. Los enlaces rotos, los slugs fantasma de `sources:` y los duplicados son tuyos: arréglalos antes de dar nada por terminado.
 
 ### Responder una pregunta sobre el wiki
 
@@ -50,18 +50,22 @@ Cuatro leyes, por orden de prioridad:
 1. Lee `outputs/<channel>/SPEC.md` y las páginas del wiki que aparecen en su mapeo de hechos.
 2. Redacta en `outputs/<channel>/drafts/<YYYY-MM>/`, un archivo por idioma.
 3. Mide los límites con un script (`len()`), no a ojo. Si te pasas, corrige el borrador —nunca el wiki, salvo que el hecho esté mal.
-4. Recorre la lista de aceptación y la lista de prohibiciones de la especificación.
-5. Actualiza `outputs/<channel>/state.md`: versión, fecha, valores medidos, desviaciones.
-6. Añade una entrada `output` a `wiki/log.md` que enlace a la entrada de estado.
+4. Cita el claim ID del hecho (`<!-- claim:person-1 -->`) junto a cada frase que renderices de una página. El lint falla si te lo inventas.
+5. Recorre la lista de aceptación y la lista de prohibiciones de la especificación.
+6. Actualiza `outputs/<channel>/state.md`: versión, fecha, valores medidos, desviaciones. Las cuatro secciones del contrato deben seguir ahí (`Current`, `Known deviations`, `Versions`, `Next action`).
+7. Añade una entrada `output` a `wiki/log.md` que enlace a la entrada de estado.
 
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # enlaces rotos, huérfanas, frontmatter, fugas de capa, PII
+python scripts/wiki_lint.py wiki/          # enlaces, huérfanas, frontmatter, fugas de capa, claim IDs, forma de state, PII
 python scripts/wiki_lint.py wiki/ --strict # los avisos también fallan (úsalo en CI)
+python scripts/wiki_lint.py --self-test    # demuestra que el comprobador sigue cazando sus nueve casos
 ```
 
-Ese script es toda la cadena de herramientas del repositorio: solo biblioteca estándar. La búsqueda semántica y la capa de grafo son opcionales y viven en la skill `llm-wiki` (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); instálala si las quieres.
+Antes de dar algo por terminado, todo error que imprima el lint es tuyo. Los avisos son juicio: una página enlazada solo desde `index.md` necesita un sitio en la prosa, y un aviso de "restates" significa que un hecho se escapó de la página que lo posee.
+
+Ese script es toda la cadena de herramientas del repositorio: solo biblioteca estándar. `build_index.py` regenera `wiki/index.md`; `check_translations.py` responde "¿están todas las traducciones y al día?". La búsqueda semántica y la capa de grafo son opcionales y viven en la skill `llm-wiki` (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); instálala si las quieres.
 
 Informa los hallazgos como lista con file:line. Arregla lo mecánico (enlaces rotos, frontmatter ausente); propón los cambios de contenido en vez de hacerlos en silencio.
 

@@ -71,6 +71,20 @@ Reglas que mantienen el lint en verde:
 
 Mantén los hechos atómicos. "9 años 6 meses a fecha de 2026-11" pertenece a la página de la persona; la página del puesto dice "2020-01 → 2024-02" y enlaza a la de la persona para el total. Dos páginas nunca deben declarar el mismo total por separado.
 
+## IDs de claim
+
+Un **claim** es una frase de la que no quieres que existan dos versiones: un total, un alcance, una palabra de seniority, una modalidad (presencial/híbrido), un título. Dale un ID cuando un borrador necesite apuntar a ella, no antes.
+
+```
+<!-- claim:person-1 -->
+Nine years six months of paid work as of 2026-11.
+```
+
+- Formato: `claim:<slug>-<n>`, donde `<slug>` es el slug de la propia página y `<n>` cualquier número — `claim:person-1` y `logro:employer-3` se parsean igual.
+- Se define en la página que **posee** el hecho, una sola vez. Un ID duplicado es un error: dos páginas reclamando el mismo ID es justo el fallo que los claim IDs existen para evitar.
+- Se cita desde un borrador como `<!-- claim:person-1 -->` junto a la frase que renderiza. Si el borrador nombra un ID que ninguna página define, el lint falla — un borrador no puede inventar hechos.
+- Borrar un claim: borra el ID con él y arregla los borradores que lo citaban. Nunca renumera.
+
 ## Tamaño
 
 - Límite blando: 400 líneas / ~2.000 palabras. Más allá, divide.
@@ -117,7 +131,7 @@ Una especificación de canal no debe contener hechos. Apunta a slugs del wiki y 
 1. Copia el archivo a `raw/`; no lo edites nunca después.
 2. Escribe `wiki/sources/<slug>.md`: qué es, para qué sirve, qué resulta poco fiable, qué páginas alimenta.
 3. Actualiza cada página de entidad o concepto que toque. Si contradice una página existente, resuelve la contradicción en la página que *posee* el hecho y anótalo en `log.md`.
-4. Añade las páginas nuevas a `index.md`.
+4. Añade las páginas nuevas a `index.md` — o, si lo generas, `python scripts/build_index.py wiki/`.
 5. Añade una entrada a `log.md`.
 6. Ejecuta `python scripts/wiki_lint.py wiki/`.
 
@@ -127,7 +141,8 @@ Una especificación de canal no debe contener hechos. Apunta a slugs del wiki y 
 
 ## Cadencia de lint
 
-- Lint estructural tras cada ingesta: `python scripts/wiki_lint.py wiki/` (añade `--strict` en CI). Falla con enlaces rotos, frontmatter ausente, slugs de `sources:` sin página en `wiki/sources/`, claves de frontmatter repetidas en el cuerpo y patrones de PII (correo, teléfono, ruta absoluta) en páginas o borradores.
+- Lint estructural tras cada ingesta: `python scripts/wiki_lint.py wiki/` (añade `--strict` en CI). Falla con: enlaces rotos o malformados; frontmatter ausente; slugs de `sources:` sin página en `wiki/sources/`; claves de frontmatter repetidas en el cuerpo; IDs de claim duplicados; un borrador que cita un claim no definido; un `outputs/*/state.md` al que le falta una de las cuatro secciones del contrato; patrones de PII (correo, teléfono, ruta absoluta) en páginas o borradores. Avisa de: `updated` viejo, páginas huérfanas (sin enlace desde ninguna página — solo desde el índice también avisa) y un hecho repetido en una página que no lo posee.
+- `python scripts/build_index.py wiki/ --check` cuando `index.md` se genere en vez de escribirse a mano; `--self-test` demuestra que el comprobador sigue detectando todo lo anterior.
 - Lectura completa en busca de contradicciones cada 5 ingestas.
 - Opcional, si la skill `llm-wiki` está instalada: `wiki_stats.py` una vez al mes para la deriva y `wiki_graph_lint.py` antes de reconstruir el grafo.
 

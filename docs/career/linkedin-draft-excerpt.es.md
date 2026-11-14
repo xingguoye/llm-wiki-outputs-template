@@ -22,6 +22,17 @@ My core is C# and .NET: APIs, integrations, and the unglamorous middle layer
 between a legacy reporting stack and something that can be tested.
 ```
 
+## IDs de claim
+
+El párrafo de "About" renderiza el total que posee `person.md`. El borrador apunta al claim en lugar de reescribirlo como un hecho independiente:
+
+```markdown
+<!-- claim:person-1 -->
+over seven years building business systems
+```
+
+Si `person.md` deja de definir `claim:person-1`, `wiki_lint.py` falla: un borrador puede citar un hecho, nunca inventar la página que debería poseerlo.
+
 ## Entrada de experiencia
 
 ```

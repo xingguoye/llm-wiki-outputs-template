@@ -52,7 +52,7 @@ outputs/              产出层：规格 + 现状 + 草稿
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
 docs/                 脱敏示例（虚构人物）——就地读，不在 lint 扫描路径上
-scripts/              wiki_lint.py + check_translations.py——只用标准库，无需安装
+scripts/              wiki_lint.py + build_index.py + check_translations.py——只用标准库，无需安装
 ```
 
 想在动笔前先看约定怎么落地？就地读 [`docs/career/`](docs/career/README.md)——五个虚构页面，按顺序看。它们刻意放在 `wiki/` 之外，不影响 lint 与检索。
@@ -73,17 +73,19 @@ scripts/              wiki_lint.py + check_translations.py——只用标准库�
 ## 命令
 
 ```bash
-python scripts/wiki_lint.py wiki/            # 死链、孤儿、frontmatter、渠道教条泄漏、PII
+python scripts/wiki_lint.py wiki/            # 死链、孤儿、frontmatter、渠道教条泄漏、claim ID、state 形状、PII
 python scripts/wiki_lint.py wiki/ --json     # 同上，机器可读（CI 用这个）
 python scripts/wiki_lint.py wiki/ --strict   # 警告也算失败，CI 可用
 python scripts/wiki_lint.py wiki/ --no-pii   # 跳过 PII 扫描（剩下的靠名字，不是模式）
+python scripts/wiki_lint.py --self-test      # 用九组已知坏样例检查检查器本身
+python scripts/build_index.py wiki/          # 从页面重新生成 wiki/index.md（--check 只校验）
 python scripts/check_translations.py         # 三语译本是否齐全、是否落后于正本
 git ls-files raw/                            # 除 raw/README.md 外必须为空
 ```
 
 零依赖、免安装，Python 3.9+。有 error 时退出码 1，可直接进 CI——见 [.github/workflows/lint.yml](.github/workflows/lint.yml)，它同时守住 raw/ 不入库与铁律 3。
 
-结构之外唯一重要的检查是通读：两页把同一个日期写岔、某条断言的原件不见了、事实改了而草稿还留着旧值。这是 LLM 的活，不是脚本的活。
+结构之外，仍需人来判断的都是"意思"层面的检查：两页把同一个日期写岔、某条断言的原件不见了、事实改了而草稿还留着旧值。脚本现在接管了机械的那一半——claim ID 重复、草稿引用了没有页面定义的 claim、`state.md` 少了一节契约、PII 模式——到此为止。意思的活是 LLM 的。
 
 想要语义检索或图层？它们在借来源头的 `llm-wiki` 技能里（`wiki_search.py`、`wiki_stats.py`、`wiki_graph_*.py`）。本模板不带也能用——markdown 才是正本。
 

@@ -22,6 +22,17 @@ My core is C# and .NET: APIs, integrations, and the unglamorous middle layer
 between a legacy reporting stack and something that can be tested.
 ```
 
+## Claim ID
+
+About 段落渲染的是 `person.md` 拥有的总数。草稿指向那条 claim，而不是把它重新写成一条独立事实：
+
+```markdown
+<!-- claim:person-1 -->
+over seven years building business systems
+```
+
+若 `person.md` 不再定义 `claim:person-1`，`wiki_lint.py` 会失败：草稿可以引用事实，但不能自己发明该拥有它的页面。
+
 ## Experience 条目
 
 ```
