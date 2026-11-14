@@ -1,0 +1,101 @@
+# LLM Wiki + Outputs（中文）
+
+一份把**同一批事实**同时输送到多个去处（简历、LinkedIn、作品集、面试口径）的知识库模板。
+
+它沿用 "LLM Wiki" 模式（不可变原件 → LLM 维护的 markdown wiki → lint/查询循环），只加了一层结构：把**每个渠道的写作规则**放到独立的 `outputs/` 层，让那些规则永远不渗进事实。
+
+- [English README](README.md) · [方法论（中文）](METHOD.zh.md) · [Why this exists (EN)](METHOD.md)
+
+## 它修的是什么病
+
+把简历文案和事实塞进同一个 wiki，会朝两个方向烂掉：
+
+1. **渠道规则渗进事实。**「Headline ≤ 220 字符」被抄进六个实体页；平台一改上限，你要改九个文件。
+2. **产出物被当成来源。**LinkedIn 草稿成了它自己引用的日期的「来源」。事实失去出处，wiki 开始引用自己。
+
+解法不是更强的自律，而是一条边界：事实住 `wiki/`，渠道规则住 `outputs/<渠道>/SPEC.md`，数据单向流动。
+
+## 五分钟起步
+
+```bash
+# 1. 用此模板建仓（或 git clone 后 cd 进去）
+# 2. 原件丢进 raw/          —— PDF、docx、录音转写、旧草稿
+# 3. 让 agent 读约定：
+#      "读 wiki/SCHEMA.md，然后 ingest raw/<你的文件>"
+# 4. 写渠道规则：
+#      "按我的情况填 outputs/linkedin/SPEC.md"
+# 5. 查结构：
+python scripts/wiki_lint.py wiki/
+```
+
+适用于任何能读文件、能跑命令的 agent（Claude Code、Codex、Cursor、DSH，或能访问文件的对话）。`wiki/SCHEMA.md` 是入口契约：所有约定都在那里，或从那里一跳可达。
+
+## 目录
+
+```
+AGENTS.md             给 agent 的操作规则与流程（先读这个）
+raw/                  原件，不可变，不入库（PII）
+wiki/                 事实层，LLM 独占维护
+  SCHEMA.md           约定：页面类型、frontmatter、tag、铁律
+  index.md            全站平铺索引
+  log.md              只追加的历史：ingest / 修复 / 重构
+  entities/           人、雇主、职位、客户、项目
+  concepts/           技能、技术栈、方法
+  sources/            每份原件一页摘要
+  synthesis/          跨页综合：决定登记簿、对比
+  graph/              可选编译图层（ontology.yaml 入库）
+outputs/              产出层：规格 + 现状 + 草稿
+  SPEC.md             一份合格渠道规格应有什么
+  _template/          新渠道从这里复制
+  linkedin/           SPEC.md + state.md
+  cv/                 SPEC.md + state.md
+docs/                 脱敏示例（虚构人物）——把 docs/career/*.md 拷进 wiki/ 即可看到形状
+scripts/              lint、检索、统计、图工具（随附）
+```
+
+想在动笔前先看约定怎么落地？就地读 [`docs/career/`](docs/career/README.md)——五个虚构页面，按顺序看。它们刻意放在 `wiki/` 之外，不影响 lint 与检索。
+
+## 什么该放哪一层
+
+| 问题 | 层 | 例子 |
+|---|---|---|
+| 发生过什么？ | `raw/` | `raw/cv-2026.docx`、一段通话转写 |
+| 什么是真的、只写一次？ | `wiki/entities/*` | 「雇主：Acme，2020-01 → 2024-02，混合办公」 |
+| 这个渠道该怎么摆？ | `outputs/*/SPEC.md` | 「Headline ≤ 220；Projects 每块 ≤ 2,000」 |
+| 我实际发了什么？ | `outputs/*/state.md` + `drafts/` | 「v1 于 2026-11-10 发布；待办：照片」 |
+
+## 命令
+
+```bash
+python scripts/wiki_lint.py wiki/            # 孤儿、死链、frontmatter、超长页
+python scripts/wiki_stats.py wiki/           # 按类型统计页数/词数
+python scripts/wiki_search.py "query" --wiki wiki   # 段落级混合检索
+python scripts/wiki_graph_lint.py wiki/      # 仅在用 graph: 元数据时
+python scripts/setup_wiki.py --wiki wiki     # 可选：建语义索引
+```
+
+`wiki_search.py` 无依赖也能用（BM25）。语义路径需要 `fastembed` + `sqlite-vec`；用 `uv run --script scripts/wiki_search.py ...` 会按 PEP 723 内联头自动装。
+
+## 四条铁律
+
+1. **每个事实一个唯一来源。** 数字、日期、年限只在一个 wiki 页出现，其余页只链接。
+2. **渠道是渲染器，不是作者。** `outputs/` 可以引用事实，不得引入事实。
+3. **产出物永远不是来源。** 任何页的 `sources:` 不得出现 `outputs/`。
+4. **先改事实，再改文案。** 动 `wiki/`，然后重生成草稿；不许只改草稿把 wiki 落在后面。
+
+完整推演、失败分类、从单层 wiki 迁移的步骤见 [METHOD.zh.md](METHOD.zh.md)。
+
+## 公开自己的副本之前
+
+- [ ] `raw/` 只放你有权公开的东西；它默认被 gitignore，保持如此。
+- [ ] `raw/` 之外不出现真实雇主、客户、同事姓名（除非你就是要公开）。
+- [ ] 无电话、住址、生日、证件号、私人社媒链接。
+- [ ] `outputs/**/drafts/` 已复查——草稿泄 PII 比 wiki 页更常见。
+- [ ] `outputs/*/SPEC.md` 已通用化：平台上限是公开信息，你的个人实测值（「实测 75 字符」）不是。
+- [ ] 跑 `grep -ri "<你的姓>" . --exclude-dir=.git`，以及每个雇主、客户名。
+
+## 来源与许可
+
+wiki 模式、`SCHEMA.md` 约定与随附 `scripts/` 出自作者本机的 `llm-wiki` 技能，该技能遵循 Andrej Karpathy 2026 年 4 月的 "LLM Wiki" gist。三层事实/产出拆分、渠道规格格式与 `METHOD.md` 是本模板新增的内容。重新发布脚本前请看 [CREDITS.md](CREDITS.md)。
+
+MIT 许可，见 [LICENSE](LICENSE)。

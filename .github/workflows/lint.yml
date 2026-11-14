@@ -1,0 +1,49 @@
+name: lint
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Wiki structural lint
+        run: python scripts/wiki_lint.py wiki/ --json > lint.json && cat lint.json
+
+      - name: No wiki page may cite a destination as a source (law 3)
+        run: |
+          set -e
+          offenders=$(grep -rIl --include='*.md' -E '^sources:.*outputs/' wiki/ || true)
+          if [ -n "$offenders" ]; then
+            echo "Law 3 violated — these pages cite outputs/ as a source:"
+            echo "$offenders"
+            exit 1
+          fi
+          echo "ok: no wiki page cites outputs/"
+
+      - name: raw/ must stay private
+        run: |
+          set -e
+          tracked=$(git ls-files raw/ | grep -v '^raw/README.md$' || true)
+          if [ -n "$tracked" ]; then
+            echo "raw/ must not be committed. Tracked files:"
+            echo "$tracked"
+            exit 1
+          fi
+          echo "ok: raw/ is untracked"
+
+      - name: Channel specs must declare fact mappings
+        run: |
+          set -e
+          for f in outputs/*/SPEC.md; do
+            [ "$f" = "outputs/SPEC.md" ] && continue
+            grep -qi 'fact mapping' "$f" || { echo "missing fact-mapping section: $f"; exit 1; }
+          done
+          echo "ok: every channel spec has a fact map"

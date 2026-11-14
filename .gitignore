@@ -1,0 +1,21 @@
+# Sources are immutable and private. Only this README is tracked.
+raw/*
+!raw/README.md
+
+# Retrieval artifacts — regenerable, never hand-edited.
+wiki/.wiki-cache/
+
+# Compiled graph artifacts (ontology.yaml IS tracked; see wiki/graph/README.md).
+wiki/graph/nodes.jsonl
+wiki/graph/edges.jsonl
+wiki/graph/graph.sqlite
+wiki/graph/graph.graphml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
