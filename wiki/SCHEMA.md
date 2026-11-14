@@ -60,7 +60,7 @@ created: 2026-01-31
 type: entity            # source | entity | concept | synthesis
 kind: position          # entities only
 tags: [position, timeline]
-sources: [source-cv-2026]   # source-summary slugs; never outputs/
+sources: [source-cv-2026]   # source-summary slugs only — never a deliverable folder
 updated: 2026-01-31
 ---
 ```
