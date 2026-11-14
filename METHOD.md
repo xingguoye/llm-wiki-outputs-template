@@ -73,7 +73,7 @@ Keep it to four sections: current version and date; what is known to be wrong or
 2. **Correct** (whenever a contradiction appears): fix the one page that owns the fact; do not fix the copies.
 3. **Render** (per release): read the channel spec, pull facts by slug, produce the draft, check limits and the forbidden list.
 4. **Record** (per release): bump `state.md`, note deviations, log the change.
-5. **Lint** (periodic): `wiki_lint.py` for structure, a read-through for contradictions, `wiki_stats.py` for drift.
+5. **Lint** (periodic): `wiki_lint.py` for structure, a read-through for contradictions and drift.
 
 The critical property is that steps 1 and 2 touch only `wiki/`, and step 3 only reads it. If you find yourself editing a draft to fix a fact, the model has failed — that edit belongs in the wiki.
 

@@ -49,8 +49,8 @@ outputs/              产出层：规格 + 现状 + 草稿
   _template/          新渠道从这里复制
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
-docs/                 脱敏示例（虚构人物）——把 docs/career/*.md 拷进 wiki/ 即可看到形状
-scripts/              lint、检索、统计、图工具（随附）
+docs/                 脱敏示例（虚构人物）——就地读，不在 lint 扫描路径上
+scripts/              wiki_lint.py——只用标准库，无需安装
 ```
 
 想在动笔前先看约定怎么落地？就地读 [`docs/career/`](docs/career/README.md)——五个虚构页面，按顺序看。它们刻意放在 `wiki/` 之外，不影响 lint 与检索。
@@ -67,14 +67,17 @@ scripts/              lint、检索、统计、图工具（随附）
 ## 命令
 
 ```bash
-python scripts/wiki_lint.py wiki/            # 孤儿、死链、frontmatter、超长页
-python scripts/wiki_stats.py wiki/           # 按类型统计页数/词数
-python scripts/wiki_search.py "query" --wiki wiki   # 段落级混合检索
-python scripts/wiki_graph_lint.py wiki/      # 仅在用 graph: 元数据时
-python scripts/setup_wiki.py --wiki wiki     # 可选：建语义索引
+python scripts/wiki_lint.py wiki/            # 死链、孤儿、frontmatter、渠道教条泄漏
+python scripts/wiki_lint.py wiki/ --json     # 同上，机器可读（CI 用这个）
+python scripts/wiki_lint.py wiki/ --strict   # 警告也算失败，CI 可用
+git ls-files raw/                            # 除 raw/README.md 外必须为空
 ```
 
-`wiki_search.py` 无依赖也能用（BM25）。语义路径需要 `fastembed` + `sqlite-vec`；用 `uv run --script scripts/wiki_search.py ...` 会按 PEP 723 内联头自动装。
+零依赖、免安装，Python 3.9+。有 error 时退出码 1，可直接进 CI——见 [.github/workflows/lint.yml](.github/workflows/lint.yml)，它同时守住 raw/ 不入库与铁律 3。
+
+结构之外唯一重要的检查是通读：两页把同一个日期写岔、某条断言的原件不见了、事实改了而草稿还留着旧值。这是 LLM 的活，不是脚本的活。
+
+想要语义检索或图层？它们在借来源头的 `llm-wiki` 技能里（`wiki_search.py`、`wiki_stats.py`、`wiki_graph_*.py`）。本模板不带也能用——markdown 才是正本。
 
 ## 四条铁律
 
@@ -96,6 +99,6 @@ python scripts/setup_wiki.py --wiki wiki     # 可选：建语义索引
 
 ## 来源与许可
 
-wiki 模式、`SCHEMA.md` 约定与随附 `scripts/` 出自作者本机的 `llm-wiki` 技能，该技能遵循 Andrej Karpathy 2026 年 4 月的 "LLM Wiki" gist。三层事实/产出拆分、渠道规格格式与 `METHOD.md` 是本模板新增的内容。重新发布脚本前请看 [CREDITS.md](CREDITS.md)。
+wiki 模式遵循 Andrej Karpathy 2026 年 4 月的 "LLM Wiki" gist。`SCHEMA.md` 的页面类型、slug 规则与图层谓词改编自 `llm-wiki` 技能（同源于那份 gist）；语义检索与图工具（`wiki_search.py`、`wiki_stats.py`、`wiki_graph_*.py`）归该技能所有，本仓库不转发。三层事实/产出拆分、渠道规格契约、`scripts/wiki_lint.py` 与 `METHOD.md` 是本模板原创。详见 [CREDITS.md](CREDITS.md)。
 
 MIT 许可，见 [LICENSE](LICENSE)。

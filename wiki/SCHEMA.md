@@ -125,10 +125,9 @@ A channel spec must not contain facts. It points at wiki slugs and states constr
 
 ## Lint cadence
 
-- Structural lint after every ingest: `python scripts/wiki_lint.py wiki/`
+- Structural lint after every ingest: `python scripts/wiki_lint.py wiki/` (add `--strict` in CI).
 - Read-through for contradictions after every 5 ingests.
-- `python scripts/wiki_stats.py wiki/` monthly, to spot drift.
-- Graph lint + extract only if pages declare `graph:` metadata.
+- Optional, if the `llm-wiki` skill is installed: `wiki_stats.py` monthly for drift, `wiki_graph_lint.py` before any graph rebuild.
 
 ## User preferences
 

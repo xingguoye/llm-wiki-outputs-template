@@ -38,7 +38,7 @@ Four laws, in priority order:
 
 ### Answer a question about the wiki
 
-1. `python scripts/wiki_search.py "<query>" --wiki wiki` (add `--json` for structured hits).
+1. `python scripts/wiki_lint.py wiki/` first (cheap), then search: read `wiki/index.md` and follow the one-line summaries; `grep -rn "<term>" wiki/` is usually enough. If the `llm-wiki` skill is installed, its `wiki_search.py` gives ranked section-level retrieval.
 2. Read the pages it returns; follow the links out to the pages that own the relevant facts.
 3. Answer from wiki text only. If the answer requires a fact the wiki lacks, say so and propose the ingest that would supply it. Do not fill the gap from general knowledge and present it as wiki content.
 4. If the answer is reusable (a comparison, a decision), file it as a `synthesis` page and log it.
@@ -55,10 +55,11 @@ Four laws, in priority order:
 ### Lint
 
 ```bash
-python scripts/wiki_lint.py wiki/          # structure: orphans, dead links, frontmatter
-python scripts/wiki_stats.py wiki/         # counts and drift
-python scripts/wiki_graph_lint.py wiki/    # only if pages carry graph: metadata
+python scripts/wiki_lint.py wiki/          # dead links, orphans, frontmatter, layer leaks
+python scripts/wiki_lint.py wiki/ --strict # warnings fail too (use in CI)
 ```
+
+That script is the whole toolchain in this repo — stdlib only. Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
 
 Report findings as a list with file:line. Fix mechanical issues (dead links, missing frontmatter); propose content changes rather than making them silently.
 

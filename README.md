@@ -49,8 +49,8 @@ outputs/              destination layer. Specs, state, drafts.
   _template/          copy this per new channel
   linkedin/           SPEC.md + state.md
   cv/                 SPEC.md + state.md
-docs/                 worked example (fictional) — copy docs/career/*.md into wiki/ to see the shape
-scripts/              lint, search, stats, graph tools (vendored)
+docs/                 worked example (fictional) — read in place, outside lint's path
+scripts/              wiki_lint.py — stdlib only, no install step
 ```
 
 Want to see the conventions in use before writing anything? Read [`docs/career/`](docs/career/README.md) in place — five fictional pages, in reading order. They are deliberately outside `wiki/` so they don't affect lint or search.
@@ -67,14 +67,17 @@ Want to see the conventions in use before writing anything? Read [`docs/career/`
 ## Commands
 
 ```bash
-python scripts/wiki_lint.py wiki/            # orphans, dead links, frontmatter, oversize
-python scripts/wiki_stats.py wiki/           # page/word counts by type
-python scripts/wiki_search.py "query" --wiki wiki   # section-level hybrid search
-python scripts/wiki_graph_lint.py wiki/      # only if you use graph: metadata
-python scripts/setup_wiki.py --wiki wiki     # optional: build the semantic index
+python scripts/wiki_lint.py wiki/            # broken links, orphans, frontmatter, layer leaks
+python scripts/wiki_lint.py wiki/ --json     # same, machine-readable (CI uses this)
+python scripts/wiki_lint.py wiki/ --strict   # warnings fail too; use in CI
+git ls-files raw/                            # must be empty except raw/README.md
 ```
 
-`wiki_search.py` works without dependencies (BM25). The semantic path needs `fastembed` + `sqlite-vec`; `uv run --script scripts/wiki_search.py ...` installs them from the inline PEP 723 header.
+No dependencies, no install. Python 3.9+. It exits 1 on errors, so it drops straight into CI — see [.github/workflows/lint.yml](.github/workflows/lint.yml), which also enforces the raw/ privacy rule and law 3.
+
+Beyond structure, the only check that matters is a read-through: two pages asserting the same date differently, a claim whose source vanished, a fact that changed while a draft kept the old value. That is the job the LLM does, not the script.
+
+Optional, if you want semantic search or the graph layer: they live in the `llm-wiki` agent skill this template borrows its conventions from (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`). Install it, point the scripts at your `wiki/`. The template works without them — markdown is canonical.
 
 ## The four laws
 
@@ -96,7 +99,7 @@ Full reasoning, failure taxonomy, and migration steps: [METHOD.md](METHOD.md).
 
 ## Credits
 
-The wiki pattern, the `SCHEMA.md` conventions, and the bundled `scripts/` come from the author's local `llm-wiki` skill, which follows Andrej Karpathy's "LLM Wiki" gist (April 2026). The three-layer facts/outputs split, the channel-spec format, and `METHOD.md` are this template's addition. See [CREDITS.md](CREDITS.md) before republishing the scripts.
+The wiki pattern follows Andrej Karpathy's "LLM Wiki" gist (April 2026). The `SCHEMA.md` conventions and the page/graph vocabulary are adapted from the `llm-wiki` agent skill, which builds on that gist — the skill owns `wiki_search.py`, `wiki_stats.py`, and the `wiki_graph_*` tools, which this repo does not redistribute. The three-layer facts/outputs split, the channel-spec contract, `scripts/wiki_lint.py`, and `METHOD.md` are original to this template. Details in [CREDITS.md](CREDITS.md).
 
 ## License
 

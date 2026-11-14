@@ -3,10 +3,13 @@
 Compiled knowledge graph derived from the markdown wiki. **Markdown is canonical.** Everything here except `ontology.yaml` can be deleted and rebuilt.
 
 ```bash
+# requires the `llm-wiki` skill — these tools are not bundled with this template
 python scripts/wiki_graph_lint.py wiki/          # validate typed edges against the ontology
 python scripts/wiki_graph_extract.py wiki/ --out wiki/graph
 python scripts/wiki_graph_query.py wiki/ neighbors --node position:fullstack-acme
 ```
+
+Nothing here is load-bearing: without the skill, the ontology stays a written convention you follow by hand, and the graph layer simply isn't compiled.
 
 ## Files
 

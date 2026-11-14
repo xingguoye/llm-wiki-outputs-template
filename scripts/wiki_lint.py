@@ -1,315 +1,269 @@
 #!/usr/bin/env python3
+"""Structural lint for an LLM Wiki with an outputs layer.
+
+Standard library only. No dependencies, no network.
+
+    python scripts/wiki_lint.py wiki/
+    python scripts/wiki_lint.py wiki/ --json
+    python scripts/wiki_lint.py wiki/ --strict    # warnings also fail the run
+
+Checks
+------
+error   broken wikilink            [[slug]] with no page of that name
+error   missing/invalid frontmatter required keys absent, unparsable block
+error   unknown page type          not in --types (default: source, entity, concept, synthesis)
+error   outputs cited as a source  `sources:` may not point outside wiki/
+error   duplicate slug             two pages resolve to the same [[slug]]
+warn    orphan page                no inbound wikilink (index.md counts)
+warn    index-only page            linked from index.md and nowhere else
+warn    channel rule in a fact page  character limits, page counts, "Headline", "Skills 50"
+warn    stale page                 `updated` older than --stale-days (default 180)
+
+Exit status: 0 clean or warnings only, 1 errors (or warnings under --strict).
 """
-wiki_lint.py — Structural health check for an LLM Wiki.
 
-Reports orphan pages, broken wikilinks, oversized pages, frontmatter issues,
-stale pages, duplicate slugs, and (with --suggest-pages) terms that appear in
-many pages without their own page.
-
-Conservative by design: reports findings, never edits.
-
-Usage:
-    python wiki_lint.py [<wiki-dir>] [options]
-
-Options:
-    --soft-cap N        Page-size soft cap in lines (default: 400)
-    --hard-cap N        Page-size hard cap in lines (default: 800)
-    --required-fm a,b   Required frontmatter fields (default: type,title,tags,created,updated)
-    --suggest-pages     Surface terms appearing in many pages without a page
-    --suggest-min N     Minimum occurrences for --suggest-pages (default: 5)
-    --json              Emit JSON instead of text
-
-Examples:
-    python wiki_lint.py wiki/
-    python wiki_lint.py wiki/ --suggest-pages
-    python wiki_lint.py wiki/ --json > lint.json
-"""
+from __future__ import annotations
 
 import argparse
 import json
 import re
 import sys
-from collections import Counter, defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
+DEFAULT_TYPES = ("source", "entity", "concept", "synthesis")
+REQUIRED_KEYS = ("type", "title", "created", "updated")
 
-WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-CAPITALIZED_PHRASE_RE = re.compile(r"\b([A-Z][a-zA-Z0-9]+(?:\s+[A-Z][a-zA-Z0-9]+){0,3})\b")
+WIKILINK = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
+
+# Words that only make sense in a destination spec, not in a fact page.
+CHANNEL_PATTERNS = [
+    (re.compile(r"\b\d{2,4}\s*(?:characters|chars|字符)\b", re.I), "character limit"),
+    (re.compile(r"\bHeadline\b"), "LinkedIn field name"),
+    (re.compile(r"\b(?:max|máx)\s+\d+\s*skills\b", re.I), "skills cap"),
+    (re.compile(r"\b\d+\s*(?:page|pages|páginas)\s+max\b", re.I), "page cap"),
+    (re.compile(r"\bATS\b"), "ATS formatting rule"),
+]
 
 
-SKIP_TOP_LEVEL_FILES = {"SCHEMA.md", "index.md", "log.md", "README.md"}
-SKIP_TOP_LEVEL_DIRS = {"indexes", "graph", "raw"}
+class Page:
+    __slots__ = ("path", "rel", "slug", "meta", "body", "raw", "errors")
+
+    def __init__(self, path: Path, rel: str, raw: str):
+        self.path = path
+        self.rel = rel
+        self.slug = path.stem
+        self.raw = raw
+        self.meta: dict[str, object] = {}
+        self.body = raw
+        self.errors: list[str] = []
 
 
-def parse_frontmatter(text: str) -> tuple[dict, str, bool]:
-    """Returns (metadata, body, malformed). malformed=True if frontmatter was attempted but unparseable."""
+def parse_frontmatter(page: Page) -> None:
+    text = page.raw
     if not text.startswith("---"):
-        return {}, text, False
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}, text, True
-    fm_text = m.group(1)
-    body = text[m.end():]
-    meta = {}
-    current_key = None
-    for line in fm_text.split("\n"):
-        if not line.strip():
+        page.errors.append("no frontmatter block (file must start with ---)")
+        return
+    lines = text.splitlines()
+    end = None
+    for i in range(1, len(lines)):
+        if lines[i].strip() in ("---", "..."):
+            end = i
+            break
+    if end is None:
+        page.errors.append("frontmatter block never closed")
+        return
+
+    page.body = "\n".join(lines[end + 1 :])
+    for i in range(1, end):
+        line = lines[i]
+        if not line.strip() or line.lstrip().startswith("#"):
             continue
-        kv = re.match(r"^([a-zA-Z_]+):\s*(.*)$", line)
-        if kv:
-            key, value = kv.group(1), kv.group(2).strip()
-            if value.startswith("[") and value.endswith("]"):
-                items = [x.strip().strip('"').strip("'") for x in value[1:-1].split(",") if x.strip()]
-                meta[key] = items
-            elif value:
-                meta[key] = value.strip('"').strip("'")
+        if line.startswith((" ", "\t", "-")):
+            continue  # continuation / list item; handled by the key above it
+        if ":" not in line:
+            page.errors.append(f"frontmatter line {i + 1} is not `key: value`: {line.strip()!r}")
+            continue
+        key, _, value = line.partition(":")
+        key = key.strip()
+        value = value.strip()
+        if value.startswith("[") and value.endswith("]"):
+            inner = value[1:-1].strip()
+            page.meta[key] = [v.strip().strip("'\"") for v in inner.split(",") if v.strip()]
+        elif value == "":
+            page.meta[key] = []
+        else:
+            page.meta[key] = value.strip("'\"")
+    # list continuation: "key:\n  - a\n  - b"
+    current = None
+    for i in range(1, end):
+        line = lines[i]
+        if line and not line.startswith((" ", "\t", "-")) and ":" in line:
+            current = line.partition(":")[0].strip()
+        elif current and line.strip().startswith("- "):
+            existing = page.meta.get(current)
+            item = line.strip()[2:].strip().strip("'\"")
+            if isinstance(existing, list):
+                existing.append(item)
             else:
-                meta[key] = []
-                current_key = key
-        elif line.startswith("  - ") and current_key:
-            meta[current_key].append(line[4:].strip().strip('"').strip("'"))
-    return meta, body, False
+                page.meta[current] = [item]
 
 
-def collect_pages(wiki_root: Path) -> list[dict]:
-    pages = []
-    for md_path in wiki_root.rglob("*.md"):
-        rel = md_path.relative_to(wiki_root)
-        if rel.parts[0] in SKIP_TOP_LEVEL_FILES or rel.parts[0] in SKIP_TOP_LEVEL_DIRS:
+NON_PAGES = {"index.md", "log.md", "SCHEMA.md", "README.md"}
+
+
+def collect(root: Path) -> list[Page]:
+    pages: list[Page] = []
+    for path in sorted(root.rglob("*.md")):
+        rel_parts = path.relative_to(root).parts
+        if any(part.startswith(".") for part in rel_parts):
             continue
-        if rel.name.startswith("."):
-            continue
-        try:
-            text = md_path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError) as e:
-            pages.append({
-                "path": str(md_path),
-                "rel_path": str(rel),
-                "slug": md_path.stem,
-                "read_error": str(e),
-            })
-            continue
-        meta, body, malformed = parse_frontmatter(text)
-        line_count = text.count("\n") + 1
-        links = [m.group(1).strip() for m in WIKILINK_RE.finditer(body)]
-        pages.append({
-            "path": str(md_path),
-            "rel_path": str(rel),
-            "slug": md_path.stem,
-            "meta": meta,
-            "body": body,
-            "line_count": line_count,
-            "links": links,
-            "malformed_fm": malformed,
-        })
+        if path.name in ("README.md", "SCHEMA.md") or (len(rel_parts) == 1 and path.name in ("index.md", "log.md")):
+            continue  # index/log/SCHEMA/README are the wiki's own apparatus, not pages
+        rel = str(path.relative_to(root)).replace("\\", "/")
+        pages.append(Page(path, rel, path.read_text(encoding="utf-8")))
     return pages
 
 
-def parse_date(s):
-    if not s or not isinstance(s, str):
+def as_date(value: object) -> date | None:
+    if isinstance(value, list):
+        value = value[0] if value else None
+    if not isinstance(value, str):
         return None
-    try:
-        return datetime.strptime(s[:10], "%Y-%m-%d").date()
-    except (ValueError, TypeError):
-        return None
-
-
-def lint(pages: list[dict], soft_cap: int, hard_cap: int, required_fm: list[str], suggest_pages: bool, suggest_min: int) -> dict:
-    findings = {
-        "orphans": [],
-        "broken_links": [],
-        "oversized_hard": [],
-        "oversized_soft": [],
-        "missing_frontmatter": [],
-        "malformed_frontmatter": [],
-        "duplicate_slugs": [],
-        "stale_pages": [],
-        "read_errors": [],
-        "suggested_pages": [],
-        "summary": {},
-    }
-
-    # Read errors
-    for p in pages:
-        if "read_error" in p:
-            findings["read_errors"].append({"path": p["rel_path"], "error": p["read_error"]})
-
-    pages = [p for p in pages if "read_error" not in p]
-
-    # Slugs
-    slug_to_pages = defaultdict(list)
-    for p in pages:
-        slug_to_pages[p["slug"]].append(p["rel_path"])
-    for slug, paths in slug_to_pages.items():
-        if len(paths) > 1:
-            findings["duplicate_slugs"].append({"slug": slug, "paths": paths})
-
-    # Inbound link map
-    inbound = defaultdict(set)
-    all_slugs = set(slug_to_pages.keys())
-    for p in pages:
-        for link in p["links"]:
-            inbound[link].add(p["slug"])
-
-    # Orphans, broken links, oversize, frontmatter, staleness
-    for p in pages:
-        # Orphans
-        if not inbound.get(p["slug"]):
-            findings["orphans"].append({"slug": p["slug"], "path": p["rel_path"]})
-
-        # Broken links
-        for link in p["links"]:
-            if link not in all_slugs:
-                findings["broken_links"].append({
-                    "from": p["slug"],
-                    "from_path": p["rel_path"],
-                    "to": link,
-                })
-
-        # Oversize
-        if p["line_count"] > hard_cap:
-            findings["oversized_hard"].append({"path": p["rel_path"], "lines": p["line_count"]})
-        elif p["line_count"] > soft_cap:
-            findings["oversized_soft"].append({"path": p["rel_path"], "lines": p["line_count"]})
-
-        # Frontmatter
-        if p["malformed_fm"]:
-            findings["malformed_frontmatter"].append({"path": p["rel_path"]})
-        else:
-            missing = [field for field in required_fm if field not in p["meta"] or p["meta"].get(field) in ("", None, [])]
-            if missing:
-                findings["missing_frontmatter"].append({"path": p["rel_path"], "missing": missing})
-
-        # Staleness: heuristic — page hasn't been updated in 90 days AND has been touched by recent ingests.
-        # Approximate: if updated > 90d ago and the page is well-linked (a hub), flag it.
-        updated = parse_date(p["meta"].get("updated"))
-        if updated:
-            age_days = (date.today() - updated).days
-            if age_days > 90 and len(inbound.get(p["slug"], [])) >= 3:
-                findings["stale_pages"].append({
-                    "path": p["rel_path"],
-                    "updated": p["meta"].get("updated"),
-                    "age_days": age_days,
-                    "inbound_count": len(inbound.get(p["slug"], [])),
-                })
-
-    # Suggested pages: capitalized multi-word phrases appearing in many pages without a page
-    if suggest_pages:
-        phrase_pages = defaultdict(set)
-        for p in pages:
-            seen = set()
-            for m in CAPITALIZED_PHRASE_RE.finditer(p["body"]):
-                phrase = m.group(1).strip()
-                seen.add(phrase)
-            for phrase in seen:
-                phrase_pages[phrase].add(p["slug"])
-
-        # Title set for filtering
-        existing_titles = {p["meta"].get("title", "").lower() for p in pages}
-        existing_slugs_normalized = {s.lower().replace("-", " ") for s in all_slugs}
-
-        candidates = []
-        for phrase, page_set in phrase_pages.items():
-            if len(page_set) < suggest_min:
-                continue
-            if phrase.lower() in existing_titles:
-                continue
-            if phrase.lower() in existing_slugs_normalized:
-                continue
-            # Filter out section header garbage
-            if phrase.split()[0] in {"Section", "Where", "Sources", "Tags", "Type", "Title"}:
-                continue
-            candidates.append({"phrase": phrase, "page_count": len(page_set), "pages": sorted(page_set)[:5]})
-        candidates.sort(key=lambda x: -x["page_count"])
-        findings["suggested_pages"] = candidates[:30]
-
-    findings["summary"] = {
-        "total_pages": len(pages),
-        "orphans": len(findings["orphans"]),
-        "broken_links": len(findings["broken_links"]),
-        "oversized_hard": len(findings["oversized_hard"]),
-        "oversized_soft": len(findings["oversized_soft"]),
-        "missing_frontmatter": len(findings["missing_frontmatter"]),
-        "malformed_frontmatter": len(findings["malformed_frontmatter"]),
-        "duplicate_slugs": len(findings["duplicate_slugs"]),
-        "stale_pages": len(findings["stale_pages"]),
-        "read_errors": len(findings["read_errors"]),
-        "suggested_pages": len(findings["suggested_pages"]),
-    }
-    return findings
-
-
-def render_text(findings: dict) -> str:
-    out = []
-    s = findings["summary"]
-    out.append("=" * 60)
-    out.append("Wiki Lint Report")
-    out.append("=" * 60)
-    out.append(f"Total pages scanned: {s['total_pages']}")
-    out.append("")
-
-    sections = [
-        ("orphans", "Orphan pages (no inbound links)", lambda f: f"  - {f['slug']}  ({f['path']})"),
-        ("broken_links", "Broken wikilinks", lambda f: f"  - [[{f['to']}]] referenced from {f['from_path']}"),
-        ("oversized_hard", "OVERSIZE (over hard cap — must split)", lambda f: f"  - {f['path']}  ({f['lines']} lines)"),
-        ("oversized_soft", "Oversize (over soft cap — consider splitting)", lambda f: f"  - {f['path']}  ({f['lines']} lines)"),
-        ("missing_frontmatter", "Missing frontmatter fields", lambda f: f"  - {f['path']}  missing: {', '.join(f['missing'])}"),
-        ("malformed_frontmatter", "Malformed frontmatter", lambda f: f"  - {f['path']}"),
-        ("duplicate_slugs", "Duplicate slugs", lambda f: f"  - {f['slug']}: {', '.join(f['paths'])}"),
-        ("stale_pages", "Stale pages (well-linked but not updated in 90+ days)", lambda f: f"  - {f['path']}  (updated {f['updated']}, {f['age_days']}d ago, {f['inbound_count']} inbound)"),
-        ("read_errors", "Read errors", lambda f: f"  - {f['path']}: {f['error']}"),
-    ]
-
-    for key, label, formatter in sections:
-        items = findings[key]
-        if not items:
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(value[:10], fmt).date()
+        except ValueError:
             continue
-        out.append(f"{label} ({len(items)}):")
-        for item in items[:50]:
-            out.append(formatter(item))
-        if len(items) > 50:
-            out.append(f"  ... and {len(items) - 50} more")
-        out.append("")
-
-    if findings["suggested_pages"]:
-        out.append(f"Suggested page candidates ({len(findings['suggested_pages'])}):")
-        out.append("  Phrases appearing in many pages without a dedicated page:")
-        for item in findings["suggested_pages"]:
-            out.append(f"  - \"{item['phrase']}\"  ({item['page_count']} pages)")
-        out.append("")
-
-    if all(v == 0 for k, v in s.items() if k != "total_pages"):
-        out.append("No issues found. Wiki is healthy.")
-
-    return "\n".join(out)
+    return None
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("wiki", nargs="?", type=Path, default=Path("wiki"), help="Wiki directory (default: ./wiki).")
-    parser.add_argument("--soft-cap", type=int, default=400, help="Page-size soft cap (lines).")
-    parser.add_argument("--hard-cap", type=int, default=800, help="Page-size hard cap (lines).")
-    parser.add_argument("--required-fm", default="type,title,tags,created,updated", help="Required frontmatter fields, comma-separated.")
-    parser.add_argument("--suggest-pages", action="store_true", help="Surface page candidates.")
-    parser.add_argument("--suggest-min", type=int, default=5, help="Minimum page count for suggestions.")
-    parser.add_argument("--json", action="store_true", help="Emit JSON.")
-    args = parser.parse_args()
+def lint(root: Path, types: tuple[str, ...], stale_days: int) -> dict[str, list[str]]:
+    pages = collect(root)
+    by_slug: dict[str, list[Page]] = {}
+    for page in pages:
+        parse_frontmatter(page)
+        by_slug.setdefault(page.slug, []).append(page)
 
-    if not args.wiki.exists():
-        print(f"Wiki directory not found: {args.wiki}", file=sys.stderr)
-        sys.exit(1)
+    errors: list[str] = []
+    warnings: list[str] = []
+    inbound: dict[str, set[str]] = {p.slug: set() for p in pages}
+    today = date.today()
 
-    pages = collect_pages(args.wiki)
-    required_fm = [f.strip() for f in args.required_fm.split(",") if f.strip()]
-    findings = lint(pages, args.soft_cap, args.hard_cap, required_fm, args.suggest_pages, args.suggest_min)
+    for page in pages:
+        for problem in page.errors:
+            errors.append(f"{page.rel}: {problem}")
+
+        meta = page.meta
+        for key in REQUIRED_KEYS:
+            if key not in meta:
+                errors.append(f"{page.rel}: frontmatter missing `{key}`")
+        ptype = meta.get("type")
+        if isinstance(ptype, str) and ptype not in types:
+            errors.append(f"{page.rel}: unknown type {ptype!r} (allowed: {', '.join(types)})")
+
+        sources = meta.get("sources") or []
+        if isinstance(sources, str):
+            sources = [sources]
+        for src in sources:
+            if not isinstance(src, str):
+                continue
+            if src.startswith("outputs/") or re.match(r"^\.\./outputs", src):
+                errors.append(f"{page.rel}: cites {src!r} as a source — outputs are not evidence (law 3)")
+
+        updated = as_date(meta.get("updated"))
+        if updated is not None and (today - updated).days > stale_days:
+            warnings.append(
+                f"{page.rel}: `updated` is {(today - updated).days} days old ({updated}) — still true?"
+            )
+
+        for m in WIKILINK.finditer(page.body):
+            target = m.group(1).strip()
+            if target not in by_slug:
+                errors.append(f"{page.rel}: broken wikilink [[{target}]]")
+            else:
+                for tp in by_slug[target]:
+                    if tp.slug != page.slug:
+                        inbound[tp.slug].add(page.slug)
+
+        if page.slug.startswith("index") or page.rel.endswith("index.md"):
+            continue
+        for line in page.body.splitlines():
+            if "outputs/" in line or "SPEC.md" in line:
+                continue  # a pointer to the spec is fine; a rule living here is not
+            for pattern, why in CHANNEL_PATTERNS:
+                hit = pattern.search(line)
+                if hit:
+                    warnings.append(
+                        f"{page.rel}: looks like a destination rule ({why}: {hit.group(0)!r}) — "
+                        f"belongs in outputs/*/SPEC.md (law 2)"
+                    )
+                    break
+            else:
+                continue
+            break
+
+    for slug, pages_with_slug in by_slug.items():
+        if len(pages_with_slug) > 1:
+            where = ", ".join(p.rel for p in pages_with_slug)
+            errors.append(f"duplicate slug {slug!r}: {where}")
+
+    for page in pages:
+        if page.rel.endswith("index.md"):
+            continue
+        links = inbound.get(page.slug, set())
+        if not links:
+            warnings.append(f"{page.rel}: orphan — no page links to it")
+        elif links == {"index"}:
+            warnings.append(f"{page.rel}: linked only from index.md — give it a home in the prose")
+
+    return {
+        "pages": [p.rel for p in pages],
+        "errors": sorted(set(errors)),
+        "warnings": sorted(set(warnings)),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Structural lint for an LLM Wiki with an outputs layer.")
+    ap.add_argument("path", nargs="?", default="wiki", help="wiki directory (default: wiki)")
+    ap.add_argument("--types", default=",".join(DEFAULT_TYPES), help="allowed frontmatter types")
+    ap.add_argument("--stale-days", type=int, default=180, help="warn when `updated` is older")
+    ap.add_argument("--strict", action="store_true", help="warnings fail the run too")
+    ap.add_argument("--json", action="store_true", help="machine-readable output")
+    args = ap.parse_args(argv)
+
+    root = Path(args.path)
+    if not root.is_dir():
+        print(f"not a directory: {root}", file=sys.stderr)
+        return 2
+    types = tuple(t.strip() for t in args.types.split(",") if t.strip())
+    result = lint(root, types, args.stale_days)
 
     if args.json:
-        print(json.dumps(findings, indent=2, default=str))
+        print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
-        print(render_text(findings))
+        print("=" * 60)
+        print("Wiki Lint Report")
+        print("=" * 60)
+        print(f"Pages scanned: {len(result['pages'])}")
+        if result["errors"]:
+            print(f"\nErrors ({len(result['errors'])}):")
+            for e in result["errors"]:
+                print(f"  - {e}")
+        if result["warnings"]:
+            print(f"\nWarnings ({len(result['warnings'])}):")
+            for w in result["warnings"]:
+                print(f"  - {w}")
+        if not result["errors"] and not result["warnings"]:
+            print("\nNo issues found.")
+
+    if result["errors"]:
+        return 1
+    if args.strict and result["warnings"]:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
