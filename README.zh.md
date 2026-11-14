@@ -57,6 +57,8 @@ scripts/              wiki_lint.py + build_index.py + check_translations.py—�
 
 想在动笔前先看约定怎么落地？就地读 [`docs/career/`](docs/career/README.md)——五个虚构页面，按顺序看。它们刻意放在 `wiki/` 之外，不影响 lint 与检索。
 
+**本仓库不附带任何真实实例，也不该被加进来。** `docs/career/` 是编的：人物、雇主、客户、日期全是虚构。一份在用的 wiki 属于私有数据——一个姓名、一个雇主、几个客户名、四段起止日期，就足以定位到具体的人——所以做完的实例留在它被写下的地方，不复制进本仓库，也不以同一许可证发布。PII 扫描抓得到邮箱、电话、绝对路径；它认不出姓名和公司名，那部分判断只能靠人。
+
 三语覆盖到"人真的需要读"的地方：`README.md`、`METHOD.md`、`AGENTS.md`、`CREDITS.md`、`wiki/SCHEMA.md`、`wiki/graph/README.md`、每一份 `SPEC.md`，以及整个 `docs/career/` 示例，都有 `.zh.md`（中）与 `.es.md`（西）译本，无后缀的那份是正本。每份译本首行写来源——`<!-- translation: es · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->`——`python scripts/check_translations.py` 会在译本缺失、标错或落后于正本时报错。需要译本的文件由 `.translations` 一行一个列出——不是"所有文件"：你自己的 wiki 页是数据，用你写作时用的语言就好。
 
 有 8 个文件刻意保持单语，免译清单就写在那支脚本里：`wiki/index.md`（每次摄入都重写的目录）、`wiki/log.md`（只追加的历史，条目保留各自原语言）、`state.md` 账本（每次发布都变）、`wiki/.page-template.md`（片段）、`CLAUDE.md`（三行指针）、`raw/README.md`（在任何东西存在之前读一次）。译一本流水账不带来任何好处，却必然漂移。译本供人读；若与正本冲突，以正本为准。
