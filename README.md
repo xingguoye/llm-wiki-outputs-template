@@ -4,7 +4,7 @@ A template for a personal knowledge base that feeds **several destinations** —
 
 It is the "LLM Wiki" pattern (immutable sources → LLM-maintained markdown wiki → lint/query loop) with one structural addition: a separate **outputs layer** that holds the rules of each destination, so those rules never leak into the facts.
 
-- [English](README.md) · [中文](README.zh.md) · [Español](README.es.md) · [Method](METHOD.md) · [方法论](METHOD.zh.md) · [Método](METHOD.es.md)
+- [English](README.md) · [Method](METHOD.md)
 
 ## The problem it solves
 
@@ -53,15 +53,17 @@ docs/                 worked example (fictional) — read in place, outside lint
 scripts/              wiki_lint.py + build_index.py + check_translations.py — stdlib only, no install step
 ```
 
-Every doc a person reads to learn or write the method has a `.zh.md` and `.es.md` twin; the file without a suffix is canonical. Ledgers, the generated index and the page template stay English.
+**Everything here is English, and translations are opt-in.** Nothing ships as a `.zh.md` or `.es.md` twin. When a document needs a second language — because someone reads it who doesn't read English — add its path to `.translations` (one per line), write the sidecar with a provenance line on top, and `python scripts/check_translations.py` will keep the pair honest:
+
+```
+<!-- translation: es · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->
+```
+
+The un-suffixed file is canonical and wins when the two disagree; the script fails on a missing, mislabelled or older sidecar. The list is empty today, so the check passes trivially — that is the intended state, not a gap.
 
 Want to see the conventions in use before writing anything? Read [`docs/career/`](docs/career/README.md) in place — five fictional pages, in reading order. They are deliberately outside `wiki/` so they don't affect lint or search.
 
 **This repository ships no real instance, and a real one must not be added.** `docs/career/` is invented: the person, the employer, the clients and the dates are made up. A working wiki is private data — a name, an employer, client names, and four dates are enough to identify one person — so a completed instance stays where it was written and is never copied into this repo or published under the same licence. The PII scan catches e-mail addresses, phone numbers and absolute paths; it cannot recognise a name or a company, so that judgement stays manual.
-
-Docs ship in three languages wherever a human actually needs them: `README.md`, `METHOD.md`, `AGENTS.md`, `CREDITS.md`, `wiki/SCHEMA.md`, `wiki/graph/README.md`, every `SPEC.md`, and the whole `docs/career/` example have `.zh.md` (Chinese) and `.es.md` (Spanish) sidecars, and the un-suffixed file is canonical. Each translation opens with a provenance line — `<!-- translation: es · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->` — and `python scripts/check_translations.py` fails when a sidecar is missing, mislabelled, or older than the file it translates. The required list is `.translations` — one path per line — not "every file": your own wiki pages are data, and they stay in the language you write them in.
-
-Eight files stay single-language on purpose, and the script carries that exemption list: `wiki/index.md` (a table of contents rewritten on every ingest), `wiki/log.md` (append-only history, entries keep their own language), the `state.md` ledgers (they change on every release), `wiki/.page-template.md` (a fragment), `CLAUDE.md` (a three-line pointer) and `raw/README.md` (read once, before anything exists). Translating a ledger buys nothing and guarantees drift. Translations are for humans; if one disagrees with its canonical, the canonical wins.
 
 ## What goes where
 
@@ -81,7 +83,7 @@ python scripts/wiki_lint.py wiki/ --strict   # warnings fail too; use in CI
 python scripts/wiki_lint.py wiki/ --no-pii   # skip the PII scan (names, not patterns, are the rest)
 python scripts/wiki_lint.py --self-test      # check the checker against nine known-bad fixtures
 python scripts/build_index.py wiki/          # rewrite wiki/index.md from the pages (--check to verify)
-python scripts/check_translations.py         # three-language coverage and freshness
+python scripts/check_translations.py         # coverage/freshness of the translations you declared
 git ls-files raw/                            # must be empty except raw/README.md
 ```
 

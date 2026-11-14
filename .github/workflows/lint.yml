@@ -42,7 +42,7 @@ jobs:
           fi
           echo "ok: raw/ is untracked"
 
-      - name: Translations complete and current
+      - name: Declared translations are complete and current (no-op while .translations is empty)
         run: python scripts/check_translations.py .
 
       - name: Channel specs must declare fact mappings

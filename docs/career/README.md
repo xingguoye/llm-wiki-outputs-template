@@ -17,8 +17,3 @@ Two things to notice:
 
 1. **The draft repeats no dates.** It says "the current role" and lets the wiki own the span.
 2. **The decision register is boring on purpose.** Its job is to stop the same argument from recurring, not to document reasoning beautifully.
-
-Two things to notice:
-
-1. **The draft repeats no dates.** It says "the current role" and lets the wiki own the span.
-2. **The decision register is boring on purpose.** Its job is to stop the same argument from recurring, not to document reasoning beautifully.

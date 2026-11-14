@@ -8,7 +8,7 @@
 | `wiki/SCHEMA.md` page types, slug rules, tag vocabulary, graph ontology conventions | Adapted from the author's `llm-wiki` agent skill, itself built on that gist | Adapted text, MIT here |
 | Three-layer facts/outputs split, `outputs/SPEC.md` contract, channel-spec anatomy, `state.md` ledger | This template | MIT, original |
 | `scripts/wiki_lint.py` | This template, written for the three-layer layout | MIT, original |
-| `METHOD.md`, `METHOD.zh.md` | This template | MIT, original |
+| `METHOD.md` | This template | MIT, original |
 | `wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py` | The `llm-wiki` agent skill — **not included here** | Not redistributed; install the skill |
 
 ## Why the search and graph tools are not bundled

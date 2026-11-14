@@ -63,7 +63,7 @@ python scripts/wiki_lint.py --self-test    # prove the checker still catches its
 
 Before reporting done, everything the lint prints as an error is yours to fix. Warnings are judgement calls: a page linked only from `index.md` needs a home in the prose, a "restates" warning means a fact escaped the page that owns it.
 
-That script is the whole toolchain in this repo — stdlib only. `build_index.py` regenerates `wiki/index.md`; `check_translations.py` answers "is every translation present and current?". Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
+That script is the whole toolchain in this repo — stdlib only. `build_index.py` regenerates `wiki/index.md`; `check_translations.py` keeps any translations declared in `.translations` present and current — with an empty list it passes and there is nothing to do. Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
 
 Report findings as a list with file:line. Fix mechanical issues (dead links, missing frontmatter); propose content changes rather than making them silently.
 

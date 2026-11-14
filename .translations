@@ -1,38 +1,44 @@
-# Translation surface — one canonical markdown path per line.
+# Translation surface — optional, empty by default.
 #
-# These files are required to have a `.zh.md` and an `.es.md` sidecar
-# (`scripts/check_translations.py` enforces it). Keep the list to what a reader
-# has to *understand*: the method, the contracts, the worked example.
+# One canonical markdown path per line. Listing a file here is a promise that it
+# has a `.zh.md` and/or an `.es.md` sidecar, and that `scripts/check_translations.py`
+# (run in CI too) will fail when one is missing, mislabelled, or older than the
+# canonical file it translates.
 #
-# Deliberately NOT listed, and why:
-#   - your own wiki fact pages (the data — write them in the language you think in)
-#   - outputs/*/state.md and drafts (ledgers and per-language copy)
-#   - wiki/index.md, wiki/log.md, wiki/.page-template.md (generated / append-only / fragments)
+# Nothing is listed today: the template is English-only and that is the intended
+# state. Translate when a real reader needs it, not to look complete.
 #
-# Adding a line is a promise: the file now ships in three languages, and
-# `check_translations.py --strict` fails when one goes stale.
+# To add one:
+#   1. write `wiki/SCHEMA.zh.md`, first line:
+#      <!-- translation: zh · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->
+#   2. add `wiki/SCHEMA.md` below
+#   3. python scripts/check_translations.py
+#
+# Do not list ledgers (`outputs/*/state.md`), the generated `wiki/index.md`, the
+# append-only `wiki/log.md`, or `wiki/.page-template.md`: they change constantly,
+# so a translation of them is guaranteed to be wrong within a week.
 
 # The method and the rules
-README.md
-METHOD.md
-AGENTS.md
-CREDITS.md
+# README.md
+# METHOD.md
+# AGENTS.md
+# CREDITS.md
 
 # The wiki contract and the graph
-wiki/SCHEMA.md
-wiki/graph/README.md
+# wiki/SCHEMA.md
+# wiki/graph/README.md
 
 # The outputs contract
-outputs/SPEC.md
-outputs/_template/SPEC.md
-outputs/linkedin/SPEC.md
-outputs/cv/SPEC.md
+# outputs/SPEC.md
+# outputs/_template/SPEC.md
+# outputs/linkedin/SPEC.md
+# outputs/cv/SPEC.md
 
 # The worked example
-docs/career/README.md
-docs/career/person.md
-docs/career/employer.md
-docs/career/position.md
-docs/career/decision-register.md
-docs/career/linkedin-draft-excerpt.md
-docs/career/source-cv-2026.md
+# docs/career/README.md
+# docs/career/person.md
+# docs/career/employer.md
+# docs/career/position.md
+# docs/career/decision-register.md
+# docs/career/linkedin-draft-excerpt.md
+# docs/career/source-cv-2026.md
