@@ -6,6 +6,8 @@ It is the "LLM Wiki" pattern (immutable sources → LLM-maintained markdown wiki
 
 - [English](README.md) · [Method](METHOD.md)
 
+[![lint](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml/badge.svg)](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml)
+
 ## The problem it solves
 
 A wiki that also holds your CV copy rots in two directions:
@@ -18,7 +20,7 @@ The fix is not more discipline. It is a boundary: facts live in `wiki/`, destina
 ## Quick start
 
 ```bash
-# 1. Use this template (or: git clone <this repo> my-wiki && cd my-wiki)
+# 1. Use this template, or: git clone https://github.com/xingguoye/llm-wiki-outputs-template my-wiki && cd my-wiki
 # 2. Drop your sources into raw/            — PDFs, docx, transcripts, old drafts
 # 3. Point your agent at the schema:
 #      "Read wiki/SCHEMA.md, then ingest raw/<your-file>"
