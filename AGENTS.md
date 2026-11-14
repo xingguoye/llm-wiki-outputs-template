@@ -63,7 +63,7 @@ python scripts/wiki_lint.py --self-test    # prove the checker still catches its
 
 Before reporting done, every lint error is yours to fix. Warnings are judgement calls — § Lint cadence says what each one means and which way to resolve it.
 
-That script is the whole toolchain in this repo — stdlib only. `build_index.py` regenerates `wiki/index.md`; `check_translations.py` keeps any translations declared in `.translations` present and current — with an empty list it passes and there is nothing to do. Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
+That script is the whole toolchain in this repo — stdlib only. `build_index.py` regenerates `wiki/index.md`; `check_translations.py` keeps any translations declared in `.translations` present and current — today that list holds only `README.md`, so the README pair is the one enforced. Semantic search and the graph layer are optional and live in the `llm-wiki` skill (`wiki_search.py`, `wiki_stats.py`, `wiki_graph_*.py`); install it if you want them.
 
 Report findings as a list with file:line. Fix mechanical issues (dead links, missing frontmatter); propose content changes rather than making them silently.
 

@@ -5,8 +5,9 @@
 # (run in CI too) will fail when one is missing, mislabelled, or older than the
 # canonical file it translates.
 #
-# Nothing is listed today: the template is English-only and that is the intended
-# state. Translate when a real reader needs it, not to look complete.
+# Only `README.md` ships translated today: its two sidecars are the live example
+# of the mechanism below. Everything else stays English until a real reader
+# needs otherwise.
 #
 # To add one:
 #   1. write `wiki/SCHEMA.zh.md`, first line:
@@ -19,7 +20,7 @@
 # so a translation of them is guaranteed to be wrong within a week.
 
 # The method and the rules
-# README.md
+README.md
 # METHOD.md
 # AGENTS.md
 # CREDITS.md

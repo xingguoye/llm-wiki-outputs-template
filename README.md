@@ -4,7 +4,7 @@ A template for a personal knowledge base that feeds **several destinations** —
 
 It is the "LLM Wiki" pattern (immutable sources → LLM-maintained markdown wiki → lint/query loop) with one structural addition: a separate **outputs layer** that holds the rules of each destination, so those rules never leak into the facts.
 
-- [English](README.md) · [Method](METHOD.md)
+- [English](README.md) · [中文](README.zh.md) · [Español](README.es.md) · [Method](METHOD.md)
 
 [![lint](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml/badge.svg)](https://github.com/xingguoye/llm-wiki-outputs-template/actions/workflows/lint.yml)
 
@@ -53,16 +53,16 @@ outputs/              destination layer. Specs, state, drafts.
   cv/                 SPEC.md + state.md
 docs/                 worked example (fictional) — read in place, outside lint's path
 scripts/              wiki_lint.py + build_index.py + check_translations.py — stdlib only, no install step
-.translations         optional list: which docs also ship in another language (empty by default)
+.translations         optional list: which docs also ship in another language (today: this README)
 ```
 
-**Everything here is English, and translations are opt-in.** Nothing ships as a `.zh.md` or `.es.md` twin. When a document needs a second language — because someone reads it who doesn't read English — add its path to `.translations` (one per line), write the sidecar with a provenance line on top, and `python scripts/check_translations.py` will keep the pair honest:
+**The docs are English; translations are opt-in, and this README is the worked example.** Its two sidecars (`README.zh.md`, `README.es.md`) are declared in `.translations`, one path per line, and each starts with a provenance line:
 
 ```
-<!-- translation: es · canonical: wiki/SCHEMA.md · synced: 2026-11-14 -->
+<!-- translation: es · canonical: README.md · synced: 2026-11-14 -->
 ```
 
-The un-suffixed file is canonical and wins when the two disagree; the script fails on a missing, mislabelled or older sidecar. The list is empty today, so the check passes trivially — that is the intended state, not a gap.
+The un-suffixed file is canonical and wins when the two disagree; `python scripts/check_translations.py` fails on a missing, mislabelled or stale sidecar. Everything else in the repo stays English until a real reader needs otherwise — a translation is a promise to re-read, and an unread translation is the oldest lie in a repository.
 
 Want to see the conventions in use before writing anything? Read [`docs/career/`](docs/career/README.md) in place — seven fictional pages, in reading order. They are deliberately outside `wiki/` so they don't affect lint or search.
 
