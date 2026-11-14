@@ -34,7 +34,20 @@ Use `kind:` in frontmatter to subdivide entities: `person`, `company`, `position
 
 - Slugs are lowercase, ASCII, hyphenated: `position-fullstack-acme`, `stack-dotnet`.
 - One page per entity; if the same entity appears twice, merge and keep an `aliases:` list.
-- Prefix by type where it aids scanning: `position-*`, `client-*`, `stack-*`, `source-*`.
+- Prefix by type where it aids scanning:
+
+  | Prefix | Page | Lives in |
+  |---|---|---|
+  | `source-*` | one page per file in `raw/` — what it is, what it is good for | `wiki/sources/` |
+  | `person-*` | the subject of the wiki | `wiki/entities/` |
+  | `employer-*` | companies that paid for the work | `wiki/entities/` |
+  | `position-*` | one page per role, with period and arrangement | `wiki/entities/` |
+  | `client-*` | who the work was delivered for, when it differs from the employer | `wiki/entities/` |
+  | `project-*` | named projects, delivered or personal | `wiki/entities/` |
+  | `education-*` | degrees, courses, certifications | `wiki/entities/` |
+  | `stack-*` | technology stacks, with evidence | `wiki/concepts/` |
+  | `skill-*` | capability groups, including excluded ones and why | `wiki/concepts/` |
+  | `decisions-*` | the register of rulings future work must respect | `wiki/synthesis/` |
 
 ## Frontmatter
 

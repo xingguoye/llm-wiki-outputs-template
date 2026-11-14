@@ -69,10 +69,12 @@ def render(root: Path) -> str:
     ]
     for ptype in list(TYPE_ORDER) + [t for t in groups if t not in TYPE_ORDER]:
         entries = sorted(groups.get(ptype, []), key=lambda p: p.slug)
-        if not entries:
-            continue
         out.append(f"## {SECTION_TITLES.get(ptype, ptype.title())}")
         out.append("")
+        if not entries:
+            out.append("_None yet._")
+            out.append("")
+            continue
         for page in entries:
             title = str(page.meta.get("title") or "").strip()
             summary = one_line(page)
