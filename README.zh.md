@@ -4,7 +4,7 @@
 
 它沿用 "LLM Wiki" 模式（不可变原件 → LLM 维护的 markdown wiki → lint/查询循环），只加了一层结构：把**每个渠道的写作规则**放到独立的 `outputs/` 层，让那些规则永远不渗进事实。
 
-- [English README](README.md) · [方法论（中文）](METHOD.zh.md) · [Why this exists (EN)](METHOD.md)
+- [English](README.md) · [中文](README.zh.md) · [Español](README.es.md) · [方法论](METHOD.zh.md) · [Method (EN)](METHOD.md) · [Método (ES)](METHOD.es.md)
 
 ## 它修的是什么病
 
@@ -54,6 +54,8 @@ scripts/              wiki_lint.py——只用标准库，无需安装
 ```
 
 想在动笔前先看约定怎么落地？就地读 [`docs/career/`](docs/career/README.md)——五个虚构页面，按顺序看。它们刻意放在 `wiki/` 之外，不影响 lint 与检索。
+
+文档三语并行：README 与 [METHOD](METHOD.zh.md) 各有 `.md`（英）/`.zh.md`（中）/`.es.md`（西）。面向 agent 的契约——`AGENTS.md`、`wiki/SCHEMA.md`、`outputs/SPEC.md`——故意只保留单语：接口文档一译三份必然漂移，而 agent 只会读其中一份。
 
 ## 什么该放哪一层
 

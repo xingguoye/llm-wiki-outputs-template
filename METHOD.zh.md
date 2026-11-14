@@ -2,6 +2,8 @@
 
 这是本模板背后的推理。动一个既有 wiki 之前先读一遍；日常操作规则在 [`wiki/SCHEMA.md`](wiki/SCHEMA.md) 与 [`outputs/SPEC.md`](outputs/SPEC.md)。
 
+- [English](METHOD.md) · [中文](METHOD.zh.md) · [Español](METHOD.es.md)
+
 ## 1. wiki 会朝两个方向烂掉
 
 LLM Wiki 模式给了你一个知识沉淀处。只给自己看时它够用。当它同时要喂给有自己规则的去处——简历、档案、作品集、路演稿——就断了。
@@ -112,5 +114,5 @@ raw/  ──ingest──▶  wiki/  ──render──▶  outputs/  ──发�
 
 - **PII。** `raw/` 必须 gitignore；wiki 不得存电话、住址、证件号、生日。这是约定加一次复查，没有脚本强制。
 - **多语言重复。** 多语档案在 `outputs/` 里重复文案，不在 `wiki/`。让事实保持语言中立（日期、年限、专名），只有措辞会翻倍。
-- **本仓没有 CI。** 脚本是本地纪律。想强制边界，加一条 CI：`sources:` 引用 `outputs/` 就 fail——五行 grep，是本仓性价比最高的一条自动化。
+- **CI 只守三件事。** [`.github/workflows/lint.yml`](.github/workflows/lint.yml) 在三种情况下 fail：结构 lint 有 error、`sources:` 引用 `outputs/`（铁律 3）、`raw/` 里有被跟踪的文件。其余——矛盾、漂移、事实悄悄改了——仍靠通读。
 - **lint 查结构，不查真相。** 它找死链和孤儿；矛盾检测仍归你。

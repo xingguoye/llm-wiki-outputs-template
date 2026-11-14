@@ -4,7 +4,7 @@ A template for a personal knowledge base that feeds **several destinations** —
 
 It is the "LLM Wiki" pattern (immutable sources → LLM-maintained markdown wiki → lint/query loop) with one structural addition: a separate **outputs layer** that holds the rules of each destination, so those rules never leak into the facts.
 
-- [中文说明](README.zh.md) · [Why this exists](METHOD.md) · [中文方法论](METHOD.zh.md)
+- [English](README.md) · [中文](README.zh.md) · [Español](README.es.md) · [Method](METHOD.md) · [方法论](METHOD.zh.md) · [Método](METHOD.es.md)
 
 ## The problem it solves
 
@@ -54,6 +54,8 @@ scripts/              wiki_lint.py — stdlib only, no install step
 ```
 
 Want to see the conventions in use before writing anything? Read [`docs/career/`](docs/career/README.md) in place — five fictional pages, in reading order. They are deliberately outside `wiki/` so they don't affect lint or search.
+
+Docs ship in three languages: this README and [METHOD](METHOD.md) exist as `.md` (English), `.zh.md` (Chinese) and `.es.md` (Spanish). The agent-facing contracts — `AGENTS.md`, `wiki/SCHEMA.md`, `outputs/SPEC.md` — stay in one language on purpose: three copies of an interface drift, and the agent reads only one of them.
 
 ## What goes where
 

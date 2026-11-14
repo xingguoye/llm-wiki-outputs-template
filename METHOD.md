@@ -2,6 +2,8 @@
 
 This is the reasoning behind the template. Read it once before you restructure an existing wiki; the operational rules live in [`wiki/SCHEMA.md`](wiki/SCHEMA.md) and [`outputs/SPEC.md`](outputs/SPEC.md).
 
+- [English](METHOD.md) · [中文](METHOD.zh.md) · [Español](METHOD.es.md)
+
 ## 1. Two ways a wiki rots
 
 The LLM Wiki pattern gives you one place where knowledge accumulates. That is enough when the wiki is read by you. It breaks when the wiki also feeds destinations that have their own rules — a CV, a profile, a portfolio, a pitch.
@@ -112,5 +114,5 @@ Do it in one sitting. A half-migrated wiki teaches everyone the wrong rule — t
 
 - **PII.** `raw/` must be gitignored, and the wiki must never hold phone numbers, addresses, IDs, or birth dates. This is a convention plus a review step; no script enforces it.
 - **Language duplication.** Multi-language profiles duplicate copy in `outputs/`, not in `wiki/`. Keep facts language-neutral (dates, spans, proper names) so only phrasing multiplies.
-- **No CI here.** The scripts are a local discipline. If you want the boundary enforced, add a CI check that fails when a `sources:` field references `outputs/` — it is a five-line grep, and it is the single highest-value automation in this repo.
+- **The CI only guards three things.** [`.github/workflows/lint.yml`](.github/workflows/lint.yml) fails on structural lint errors, on a `sources:` field that references `outputs/` (law 3), and on a tracked file under `raw/`. Everything else — contradictions, drift, a fact that quietly changed — is still a read-through.
 - **The lint checks structure, not truth.** It finds dead links and orphans. Contradiction detection stays with you.
