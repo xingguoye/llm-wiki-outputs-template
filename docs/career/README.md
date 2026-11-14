@@ -10,8 +10,9 @@ Everything here is invented: names, companies, dates. It exists to show the conv
 | [`position.md`](position.md) | one role: period + arrangement + client attribution + optional claim IDs |
 | [`decision-register.md`](decision-register.md) | rulings that must not be re-litigated every release |
 | [`linkedin-draft-excerpt.md`](linkedin-draft-excerpt.md) | how a draft quotes facts by slug and measures its own limits |
+| [`state-after-release.md`](state-after-release.md) | the ledger the day after a release: measured values, deviations, the log line |
 
-Read them in that order: source → totals → spans → a role → the rulings → the rendered copy.
+Read them in that order: source → totals → spans → a role → the rulings → the rendered copy → the release record.
 
 Two things to notice:
 

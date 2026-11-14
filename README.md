@@ -62,7 +62,7 @@ scripts/              wiki_lint.py + build_index.py + check_translations.py — 
 
 The un-suffixed file is canonical and wins when the two disagree; the script fails on a missing, mislabelled or older sidecar. The list is empty today, so the check passes trivially — that is the intended state, not a gap.
 
-Want to see the conventions in use before writing anything? Read [`docs/career/`](docs/career/README.md) in place — six fictional pages, in reading order. They are deliberately outside `wiki/` so they don't affect lint or search.
+Want to see the conventions in use before writing anything? Read [`docs/career/`](docs/career/README.md) in place — seven fictional pages, in reading order. They are deliberately outside `wiki/` so they don't affect lint or search.
 
 **This repository ships no real instance, and a real one must not be added.** `docs/career/` is invented: the person, the employer, the clients and the dates are made up. A working wiki is private data — a name, an employer, client names, and four dates are enough to identify one person — so a completed instance stays where it was written and is never copied into this repo or published under the same licence. The PII scan catches e-mail addresses, phone numbers and absolute paths; it cannot recognise a name or a company, so that judgement stays manual.
 
