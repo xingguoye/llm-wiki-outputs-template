@@ -120,7 +120,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{target} is up to date.")
         return 0
 
-    target.write_text(text, encoding="utf-8")
+    with open(target, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
     print(f"wrote {target}")
     return 0
 
