@@ -17,6 +17,10 @@ error   source page does not exist `sources:` names a slug with no page under wi
 error   frontmatter key in body    `title:` / `created:` repeated below the `---` block
 error   duplicate slug             two pages resolve to the same [[slug]]
 error   personal data              email, phone, or absolute home path in a wiki page or draft
+error   duplicate claim ID         the same claim:/logro: ID used on two pages, or twice on one
+error   unknown claim reference    a draft quotes a claim ID that no wiki page defines
+error   state.md missing section   outputs/<channel>/state.md lacks a heading the contract requires
+warn    total restated elsewhere   an `owns:` phrase also appears on another page
 warn    orphan page                no inbound wikilink (index.md counts)
 warn    index-only page            linked from index.md and nowhere else
 warn    channel rule in a fact page  character limits, page counts, "Headline", "Skills 50"
@@ -55,6 +59,13 @@ PII_PATTERNS = [
 ]
 # Escape hatch for a page that must show a contact line: `<!-- lint:allow-pii -->`.
 PII_ALLOW = "lint:allow-pii"
+
+# A claim ID marks one checkable fact that several destinations quote verbatim.
+# Both prefixes are accepted because the same idea got two names in practice.
+CLAIM_ID = re.compile(r"\b(?:claim|logro):([a-z0-9]+(?:-[a-z0-9]+)*)\b")
+
+# The four headings every outputs/<channel>/state.md must carry (outputs/SPEC.md).
+STATE_SECTIONS = ("Current", "Known deviations", "Versions", "Next action")
 
 # Words that only make sense in a destination spec, not in a fact page.
 CHANNEL_PATTERNS = [
@@ -160,22 +171,26 @@ def as_date(value: object) -> date | None:
     return None
 
 
-def scan_drafts(root: Path) -> list[str]:
-    """Personal data in `outputs/**/drafts/**`. Drafts are where a resume line
-    gets pasted verbatim, so they need the same scan as fact pages."""
-    findings: list[str] = []
+def iter_drafts(root: Path):
+    """Yield (repo-relative path, text) for every draft under outputs/**/drafts/**."""
     outputs = root.parent / "outputs"
     if not outputs.is_dir():
-        return findings
+        return
     for path in sorted(outputs.rglob("*.md")):
         rel = path.relative_to(root.parent).as_posix()
         if "/drafts/" not in f"/{rel}":
             continue
         try:
-            text = path.read_text(encoding="utf-8")
+            yield rel, path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:
-            findings.append(f"{rel}: cannot read for the PII scan ({exc})")
-            continue
+            yield rel, f"<!-- unreadable: {exc} -->"
+
+
+def scan_drafts(root: Path) -> list[str]:
+    """Personal data in `outputs/**/drafts/**`. Drafts are where a resume line
+    gets pasted verbatim, so they need the same scan as fact pages."""
+    findings: list[str] = []
+    for rel, text in iter_drafts(root):
         if PII_ALLOW in text:
             continue
         for line_no, line in enumerate(text.splitlines(), 1):
@@ -189,6 +204,36 @@ def scan_drafts(root: Path) -> list[str]:
     return findings
 
 
+def check_draft_claims(root: Path, defined: set[str]) -> list[str]:
+    """A draft may quote a claim ID; quoting one the wiki never defined means the
+    rendered copy asserts a fact that has no home page."""
+    problems: list[str] = []
+    for rel, text in iter_drafts(root):
+        for m in CLAIM_ID.finditer(text):
+            cid = m.group(1)
+            if cid not in defined:
+                problems.append(f"{rel}: quotes claim {cid!r}, which no wiki page defines")
+    return problems
+
+
+def check_state_files(root: Path) -> list[str]:
+    """Every outputs/<channel>/state.md carries the four headings in outputs/SPEC.md."""
+    problems: list[str] = []
+    outputs = root.parent / "outputs"
+    if not outputs.is_dir():
+        return problems
+    for path in sorted(outputs.glob("*/state.md")):
+        if path.parent.name.startswith("_"):
+            continue  # _template is the skeleton, filled in by copying
+        rel = path.relative_to(root.parent).as_posix()
+        text = path.read_text(encoding="utf-8")
+        for section in STATE_SECTIONS:
+            # A localized suffix is allowed (`## Current（当前）`); the contract word is not.
+            if not re.search(rf"^##\s+{re.escape(section)}\b", text, re.M):
+                problems.append(f"{rel}: missing `## {section}` — the contract in outputs/SPEC.md requires it")
+    return problems
+
+
 def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) -> dict[str, list[str]]:
     pages = collect(root)
     by_slug: dict[str, list[Page]] = {}
@@ -200,7 +245,14 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) 
     errors: list[str] = []
     warnings: list[str] = []
     pii_findings: list[str] = []
+    claim_home: dict[str, list[str]] = {}
+    owned: dict[str, str] = {}
     inbound: dict[str, set[str]] = {p.slug: set() for p in pages}
+    index_links: set[str] = set()
+    index_file = root / "index.md"
+    if index_file.is_file():
+        for m in WIKILINK.finditer(index_file.read_text(encoding="utf-8")):
+            index_links.add(m.group(1).strip())
     today = date.today()
 
     for page in pages:
@@ -251,6 +303,24 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) 
                 f"{page.rel}: `updated` is {(today - updated).days} days old ({updated}) — still true?"
             )
 
+        for m in CLAIM_ID.finditer(page.body):
+            cid = m.group(1)
+            if not re.search(r"-\d+$", cid):
+                errors.append(f"{page.rel}: claim ID {cid!r} must end in -<number> (e.g. claim:role-1)")
+                continue
+            claim_home.setdefault(cid, []).append(page.rel)
+
+        owns = meta.get("owns") or []
+        if isinstance(owns, str):
+            owns = [owns]
+        for phrase in owns:
+            if not isinstance(phrase, str) or not phrase.strip():
+                errors.append(f"{page.rel}: `owns:` entries must be non-empty strings")
+                continue
+            if phrase in owned and owned[phrase] != page.rel:
+                errors.append(f"{page.rel}: claims ownership of {phrase!r}, already owned by {owned[phrase]}")
+            owned[phrase] = page.rel
+
         for m in WIKILINK.finditer(page.body):
             target = m.group(1).strip()
             if target not in by_slug:
@@ -282,13 +352,30 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) 
             where = ", ".join(p.rel for p in pages_with_slug)
             errors.append(f"duplicate slug {slug!r}: {where}")
 
+    for cid, where in claim_home.items():
+        if len(where) > 1:
+            errors.append(f"duplicate claim ID {cid!r}: {', '.join(sorted(set(where)))}")
+
+    for phrase, owner in owned.items():
+        for page in pages:
+            if page.rel == owner:
+                continue
+            if phrase.lower() in page.body.lower():
+                warnings.append(
+                    f"{page.rel}: restates {phrase!r}, which {owner} owns — link to the owner instead"
+                )
+
+    errors.extend(check_draft_claims(root, set(claim_home)))
+    errors.extend(check_state_files(root))
+
     for page in pages:
         if page.rel.endswith("index.md"):
             continue
         links = inbound.get(page.slug, set())
-        if not links:
+        in_index = page.slug in index_links
+        if not links and not in_index:
             warnings.append(f"{page.rel}: orphan — no page links to it")
-        elif links == {"index"}:
+        elif not links and in_index:
             warnings.append(f"{page.rel}: linked only from index.md — give it a home in the prose")
 
     if pii:
@@ -302,6 +389,73 @@ def lint(root: Path, types: tuple[str, ...], stale_days: int, pii: bool = True) 
     }
 
 
+def self_test() -> int:
+    """Exercise every check against throwaway fixtures. No wiki of your own required."""
+    import tempfile
+
+    today = date.today().isoformat()
+
+    def page(title: str, ptype: str = "entity", extra: str = "", body: str = "") -> str:
+        return (
+            f"---\ntitle: \"{title}\"\ntype: {ptype}\ncreated: {today}\nupdated: {today}\n"
+            f"{extra}---\n# {title}\n\n{body}"
+        )
+
+    source = page("Source: CV", "source", "raw: raw/cv.pdf\n")
+    cases: list[tuple[str, dict[str, str], dict[str, str], str, str]] = [
+        ("clean wiki", {"sources/source-cv.md": source,
+                        "entities/person.md": page("Person", extra="sources: [source-cv]\n")},
+         {}, "", ""),
+        ("ghost source slug", {"entities/person.md": page("Person", extra="sources: [no-such-page]\n")},
+         {}, "has no such page", ""),
+        ("frontmatter key in body", {"entities/person.md": page("Person", body="title: Person again\n")},
+         {}, "repeated in the body", ""),
+        ("email in a page", {"entities/person.md": page("Person", body="Mail me at nora@example.com\n")},
+         {}, "", "email address"),
+        ("absolute path in a draft", {"entities/person.md": page("Person")},
+         {"outputs/linkedin/drafts/2026-11/x.md": "From C:\\Users\\nora\\cv.docx\n"}, "", "absolute Windows path"),
+        ("duplicate claim ID", {"entities/a.md": page("A", body="- [claim:role-1] did a thing\n"),
+                                "entities/b.md": page("B", body="- [claim:role-1] did another thing\n")},
+         {}, "duplicate claim ID", ""),
+        ("draft quotes an undefined claim", {"entities/a.md": page("A")},
+         {"outputs/linkedin/drafts/2026-11/x.md": "Led with [claim:role-9].\n"}, "no wiki page defines", ""),
+        ("state.md missing sections", {"entities/a.md": page("A")},
+         {"outputs/linkedin/state.md": "# State\n\n## Current\n- v0\n"}, "missing `## Versions`", ""),
+        ("owned total restated", {"entities/person.md": page("Person", extra="owns: [\"7+ years\"]\n"),
+                                  "entities/employer.md": page("Employer", body="Total: 7+ years.\n")},
+         {}, "", ""),
+    ]
+
+    failures = 0
+    for name, pages, drafts, want_error, want_pii in cases:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "wiki"
+            root.mkdir()
+            for rel, text in {**pages, **drafts}.items():
+                target = Path(tmp) / rel if rel.startswith("outputs/") else root / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text, encoding="utf-8")
+            result = lint(root, DEFAULT_TYPES, 180)
+        errors, pii, warnings = result["errors"], result["pii"], result["warnings"]
+        ok = True
+        if want_error:
+            ok = any(want_error in e for e in errors)
+        elif want_pii:
+            ok = any(want_pii in p for p in pii)
+        else:
+            ok = not errors and not pii
+        if name == "owned total restated":
+            ok = ok and any("restates '7+ years'" in w for w in warnings)
+        print(f"  {'ok  ' if ok else 'FAIL'} {name}")
+        if not ok:
+            failures += 1
+            for line in errors + pii + warnings:
+                print(f"         {line}")
+
+    print(f"\nSelf-test: {len(cases) - failures}/{len(cases)} passed")
+    return 1 if failures else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Structural lint for an LLM Wiki with an outputs layer.")
     ap.add_argument("path", nargs="?", default="wiki", help="wiki directory (default: wiki)")
@@ -309,8 +463,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--stale-days", type=int, default=180, help="warn when `updated` is older")
     ap.add_argument("--strict", action="store_true", help="warnings fail the run too")
     ap.add_argument("--no-pii", action="store_true", help="skip the personal-data scan (pages and drafts)")
+    ap.add_argument("--self-test", action="store_true", help="run the built-in fixtures and exit")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     args = ap.parse_args(argv)
+
+    if args.self_test:
+        return self_test()
 
     root = Path(args.path)
     if not root.is_dir():

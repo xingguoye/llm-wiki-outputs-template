@@ -14,6 +14,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: The checker still catches its fixtures
+        run: python scripts/wiki_lint.py --self-test
+
       - name: Wiki structural lint
         run: python scripts/wiki_lint.py wiki/ --json > lint.json && cat lint.json
 
